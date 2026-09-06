@@ -5,6 +5,7 @@ import { Target, CheckCircle2, ArrowRight, Award, Sparkles } from 'lucide-react'
 import { INITIAL_SEED_QUESTIONS, SeedQuestion } from '@/lib/curriculum/gcse-data';
 import { KaTeXRenderer } from '@/components/KaTeXRenderer';
 import { AdaptiveEngine, DiagnosticResult } from '@/lib/adaptive/engine';
+import { UserStore } from '@/lib/user-store';
 import Link from 'next/link';
 
 export default function DiagnosticPage() {
@@ -24,6 +25,9 @@ export default function DiagnosticPage() {
     const newAttempts = [...attempts, { questionGrade: currentQuestion.gradeLevel, isCorrect, topicId: currentQuestion.topicId }];
     setAttempts(newAttempts);
 
+    // Track daily question attempt in UserStore
+    UserStore.recordQuestionAttempt(isCorrect);
+
     if (currentIndex + 1 < questions.length) {
       setCurrentIndex(currentIndex + 1);
       setSelectedOption(null);
@@ -41,11 +45,11 @@ export default function DiagnosticPage() {
       <div className="text-center space-y-2">
         <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-indigo-50 border border-indigo-100 text-xs font-bold text-indigo-700">
           <Target className="w-4 h-4 text-indigo-600" />
-          GCSE Seviye Tesbit Motoru
+          GCSE Diagnostic Assessment Engine
         </div>
         <h1 className="text-3xl font-extrabold text-slate-900">Initial Diagnostic Assessment</h1>
         <p className="text-slate-500 text-sm">
-          Mevcut GCSE başlangıç seviyenizi ve hedef Grade’e giden yoldaki eksiklerinizi belirleyin.
+          Determine your current baseline GCSE grade and identify key knowledge gaps on your path to Grade 9.
         </p>
       </div>
 
@@ -55,8 +59,8 @@ export default function DiagnosticPage() {
           {/* Progress Bar */}
           <div className="space-y-2">
             <div className="flex justify-between text-xs font-bold text-slate-500">
-              <span>Soru {currentIndex + 1} / {questions.length}</span>
-              <span className="text-indigo-600">Hedef Zorluk: Grade {currentQuestion.gradeLevel}</span>
+              <span>Question {currentIndex + 1} of {questions.length}</span>
+              <span className="text-indigo-600">Target Difficulty: Grade {currentQuestion.gradeLevel}</span>
             </div>
             <div className="w-full bg-slate-100 rounded-full h-2 overflow-hidden">
               <div
@@ -112,7 +116,7 @@ export default function DiagnosticPage() {
                   : 'bg-slate-200 text-slate-400 cursor-not-allowed'
               }`}
             >
-              <span>{currentIndex + 1 === questions.length ? 'Testi Tamamla' : 'Sonraki Soru'}</span>
+              <span>{currentIndex + 1 === questions.length ? 'Complete Assessment' : 'Next Question'}</span>
               <ArrowRight className="w-4 h-4" />
             </button>
           </div>
@@ -126,8 +130,8 @@ export default function DiagnosticPage() {
           </div>
 
           <div>
-            <span className="text-xs font-extrabold text-indigo-600 tracking-wider uppercase">Değerlendirme Sonucu</span>
-            <h2 className="text-3xl font-extrabold text-slate-900 mt-1">Başlangıç Seviyeniz: {result?.gradeLabel}</h2>
+            <span className="text-xs font-extrabold text-indigo-600 tracking-wider uppercase">Assessment Result</span>
+            <h2 className="text-3xl font-extrabold text-slate-900 mt-1">Baseline Grade: {result?.gradeLabel}</h2>
             <p className="text-slate-600 text-sm max-w-xl mx-auto mt-2 leading-relaxed">
               {result?.summaryText}
             </p>
@@ -135,12 +139,12 @@ export default function DiagnosticPage() {
 
           <div className="grid sm:grid-cols-2 gap-4 max-w-lg mx-auto text-left">
             <div className="p-4 rounded-xl bg-emerald-50 border border-emerald-200">
-              <span className="text-xs font-bold text-emerald-800 uppercase block mb-1">Güçlü Konular</span>
-              <span className="text-sm font-semibold text-emerald-950">Quadratic Equations & Specific Heat</span>
+              <span className="text-xs font-bold text-emerald-800 uppercase block mb-1">Strong Topics</span>
+              <span className="text-sm font-semibold text-emerald-950">Quadratic Equations & Energy Transfer</span>
             </div>
             <div className="p-4 rounded-xl bg-amber-50 border border-amber-200">
-              <span className="text-xs font-bold text-amber-800 uppercase block mb-1">Geliştirilecek Konular</span>
-              <span className="text-sm font-semibold text-amber-950">CPU Registers & Surds</span>
+              <span className="text-xs font-bold text-amber-800 uppercase block mb-1">Areas for Improvement</span>
+              <span className="text-sm font-semibold text-amber-950">CPU Registers & Weimar Republic</span>
             </div>
           </div>
 
@@ -150,7 +154,7 @@ export default function DiagnosticPage() {
               className="inline-flex items-center gap-2 px-6 py-3.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-sm shadow-md"
             >
               <Award className="w-4 h-4" />
-              <span>Paneline Git ve Hedef Belirle</span>
+              <span>Go to Dashboard & Set Targets</span>
             </Link>
 
             <Link
@@ -158,7 +162,7 @@ export default function DiagnosticPage() {
               className="inline-flex items-center gap-2 px-6 py-3.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold text-sm"
             >
               <Sparkles className="w-4 h-4 text-indigo-600" />
-              <span>Akıllı Alıştırmalara Başla</span>
+              <span>Start AI Adaptive Practice</span>
             </Link>
           </div>
         </div>
@@ -167,3 +171,4 @@ export default function DiagnosticPage() {
     </div>
   );
 }
+

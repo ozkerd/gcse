@@ -1,14 +1,47 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { Award, Sparkles, TrendingUp, Calendar, AlertCircle, ArrowRight, CheckCircle, RefreshCw } from 'lucide-react';
 import { AdaptiveEngine } from '@/lib/adaptive/engine';
+import { UserStore, UserSession, DailyStats } from '@/lib/user-store';
 
 export default function Dashboard() {
-  const [targetGrade, setTargetGrade] = useState<number>(9);
+  const [session, setSession] = useState<UserSession>({
+    role: 'guest',
+    name: 'Guest Student',
+    email: 'guest@primerllm.com',
+    targetGrade: 9,
+  });
+
+  const [dailyStats, setDailyStats] = useState<DailyStats>({
+    date: new Date().toISOString().split('T')[0],
+    questionsAttemptedToday: 0,
+    questionsCorrectToday: 0,
+    streakDays: 4,
+  });
+
   const [estimatedGrade, setEstimatedGrade] = useState<number>(6.5);
-  const [streakDays, setStreakDays] = useState<number>(4);
+
+  useEffect(() => {
+    setSession(UserStore.getSession());
+    setDailyStats(UserStore.getDailyStats());
+
+    const handleUserUpdate = () => setSession(UserStore.getSession());
+    const handleStatsUpdate = () => setDailyStats(UserStore.getDailyStats());
+
+    window.addEventListener('gcse_user_updated', handleUserUpdate);
+    window.addEventListener('gcse_stats_updated', handleStatsUpdate);
+
+    return () => {
+      window.removeEventListener('gcse_user_updated', handleUserUpdate);
+      window.removeEventListener('gcse_stats_updated', handleStatsUpdate);
+    };
+  }, []);
+
+  const handleTargetGradeChange = (newGrade: number) => {
+    UserStore.setTargetGrade(newGrade);
+  };
 
   const mockMasteries = [
     { topicId: 'm-alg-1', masteryScore: 78.0, totalAttempted: 18, totalCorrect: 14, lastAttemptAt: '2026-09-05' },
@@ -17,7 +50,10 @@ export default function Dashboard() {
     { topicId: 'cs-sys-1', masteryScore: 90.0, totalAttempted: 15, totalCorrect: 14, lastAttemptAt: '2026-09-06' },
   ];
 
-  const recommendedTopics = AdaptiveEngine.getRecommendedTopics('maths', mockMasteries, targetGrade);
+  const recommendedTopics = AdaptiveEngine.getRecommendedTopics('maths', mockMasteries, session.targetGrade);
+
+  const targetDailyQuestions = 15;
+  const progressPercent = Math.min(100, Math.round((dailyStats.questionsAttemptedToday / targetDailyQuestions) * 100));
 
   return (
     <div className="space-y-8">
@@ -25,22 +61,26 @@ export default function Dashboard() {
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
         <div>
-          <h1 className="text-2xl font-extrabold text-slate-900">Öğrenci Paneli & İlerleme Takibi</h1>
-          <p className="text-slate-500 text-sm">Günlük hedeflerinizi görün, eksik konularınızı tespit edin ve Grade 9’a ulaşın.</p>
+          <h1 className="text-2xl font-extrabold text-slate-900">Student Dashboard & Progress Tracker</h1>
+          <p className="text-slate-500 text-sm">
+            {session.role === 'guest'
+              ? 'Welcome! You are currently learning in Guest Mode. Progress is saved via cookies.'
+              : `Welcome back, ${session.name}! View daily goals and track your path to Grade ${session.targetGrade}.`}
+          </p>
         </div>
 
         {/* Target Grade Selector */}
         <div className="flex items-center gap-4 bg-indigo-50/80 border border-indigo-100 p-3 rounded-xl">
           <Award className="w-6 h-6 text-indigo-600" />
           <div>
-            <label className="block text-[11px] font-bold text-indigo-900 uppercase tracking-wider">Hedef GCSE Grade</label>
+            <label className="block text-[11px] font-bold text-indigo-900 uppercase tracking-wider">Target GCSE Grade</label>
             <select
-              value={targetGrade}
-              onChange={(e) => setTargetGrade(Number(e.target.value))}
+              value={session.targetGrade}
+              onChange={(e) => handleTargetGradeChange(Number(e.target.value))}
               className="bg-white border border-indigo-200 text-indigo-950 font-bold text-sm rounded-lg px-2.5 py-1 focus:ring-2 focus:ring-indigo-500"
             >
               {[4, 5, 6, 7, 8, 9].map(g => (
-                <option key={g} value={g}>Grade {g} (A* Level)</option>
+                <option key={g} value={g}>Grade {g} (Target)</option>
               ))}
             </select>
           </div>
@@ -52,38 +92,46 @@ export default function Dashboard() {
         
         <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
           <div className="flex items-center justify-between mb-2">
-            <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Tahmini Mevcut Seviye</span>
+            <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Estimated Current Grade</span>
             <TrendingUp className="w-5 h-5 text-indigo-600" />
           </div>
           <div className="text-3xl font-extrabold text-slate-900">Grade {estimatedGrade}</div>
-          <p className="text-xs text-indigo-600 font-semibold mt-2">Hedef Grade {targetGrade}'e 2.5 Grade kaldı</p>
+          <p className="text-xs text-indigo-600 font-semibold mt-2">
+            {(session.targetGrade - estimatedGrade) > 0 
+              ? `${(session.targetGrade - estimatedGrade).toFixed(1)} Grades remaining to Target`
+              : 'Target Grade achieved!'}
+          </p>
         </div>
 
         <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
           <div className="flex items-center justify-between mb-2">
-            <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Çalışma Seri (Streak)</span>
+            <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Study Streak</span>
             <Sparkles className="w-5 h-5 text-amber-500" />
           </div>
-          <div className="text-3xl font-extrabold text-slate-900">{streakDays} Gün 🔥</div>
-          <p className="text-xs text-slate-500 mt-2">Harika gidiyorsun! Seriyi bozma.</p>
+          <div className="text-3xl font-extrabold text-slate-900">{dailyStats.streakDays} Days 🔥</div>
+          <p className="text-xs text-slate-500 mt-2">Keep your daily revision momentum going!</p>
         </div>
 
         <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
           <div className="flex items-center justify-between mb-2">
-            <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Bugün Çözülen Soru</span>
+            <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Questions Solved Today</span>
             <CheckCircle className="w-5 h-5 text-emerald-600" />
           </div>
-          <div className="text-3xl font-extrabold text-slate-900">12 / 15</div>
-          <p className="text-xs text-emerald-600 font-semibold mt-2">Günlük hedefin %80'i tamamlandı</p>
+          <div className="text-3xl font-extrabold text-slate-900">
+            {dailyStats.questionsAttemptedToday} / {targetDailyQuestions}
+          </div>
+          <p className="text-xs text-emerald-600 font-semibold mt-2">
+            {progressPercent}% of daily goal completed
+          </p>
         </div>
 
         <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
           <div className="flex items-center justify-between mb-2">
-            <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">GCSE Sınavına Kalan</span>
+            <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Days Until GCSE Exams</span>
             <Calendar className="w-5 h-5 text-purple-600" />
           </div>
-          <div className="text-3xl font-extrabold text-slate-900">248 Gün</div>
-          <p className="text-xs text-slate-500 mt-2">Mayıs/Haziran 2027 Dönemi</p>
+          <div className="text-3xl font-extrabold text-slate-900">248 Days</div>
+          <p className="text-xs text-slate-500 mt-2">May/June Exam Season</p>
         </div>
 
       </div>
@@ -95,11 +143,11 @@ export default function Dashboard() {
         <div className="lg:col-span-2 bg-gradient-to-br from-indigo-900 to-purple-950 text-white rounded-2xl p-6 shadow-lg border border-indigo-800">
           <div className="flex items-center gap-2 text-yellow-300 font-bold text-xs uppercase tracking-wider mb-2">
             <Sparkles className="w-4 h-4" />
-            AI Adaptif Öneri
+            AI Adaptive Recommendation
           </div>
-          <h2 className="text-xl font-bold text-white mb-2">Bugün En Çok Odaklanmanız Gereken Konu</h2>
+          <h2 className="text-xl font-bold text-white mb-2">Recommended Focus Topic Today</h2>
           <p className="text-slate-300 text-sm mb-6">
-            Son çözdüğünüz sorulardaki hata analizi: <strong>Simultaneous Equations</strong> konusunda ustalık skorunuz %42. Bu konuyu Grade {targetGrade} seviyesine getirmek için özel soru seti oluşturuldu.
+            Error analysis from recent practice: <strong>Simultaneous Equations</strong> mastery is currently 42%. A targeted practice set has been generated for Grade {session.targetGrade}.
           </p>
 
           <div className="flex flex-wrap gap-4">
@@ -107,7 +155,7 @@ export default function Dashboard() {
               href="/practice?topic=m-alg-2"
               className="inline-flex items-center gap-2 bg-white text-indigo-900 hover:bg-slate-100 font-bold px-5 py-3 rounded-xl text-sm transition-all shadow-md"
             >
-              <span>Odaklı Alıştırmayı Başlat</span>
+              <span>Start Focused Practice</span>
               <ArrowRight className="w-4 h-4" />
             </Link>
 
@@ -116,7 +164,7 @@ export default function Dashboard() {
               className="inline-flex items-center gap-2 bg-white/10 hover:bg-white/20 text-white font-medium px-5 py-3 rounded-xl text-sm transition-all border border-white/20"
             >
               <RefreshCw className="w-4 h-4" />
-              <span>Yeniden Seviye Tesbiti Yap</span>
+              <span>Retake Diagnostic Test</span>
             </Link>
           </div>
         </div>
@@ -126,7 +174,7 @@ export default function Dashboard() {
           <div>
             <h3 className="font-bold text-slate-900 text-base mb-4 flex items-center gap-2">
               <AlertCircle className="w-5 h-5 text-amber-500" />
-              Tespit Edilen Eksik Konular
+              Identified Topic Gaps
             </h3>
             
             <div className="space-y-3">
@@ -134,7 +182,7 @@ export default function Dashboard() {
                 <div key={i} className="p-3 rounded-xl bg-slate-50 border border-slate-200">
                   <div className="flex items-center justify-between text-xs font-bold text-slate-900 mb-1">
                     <span>{rec.topicId === 'm-alg-2' ? 'Simultaneous Equations' : 'Surds & Indices'}</span>
-                    <span className="text-amber-600">Öncelik High</span>
+                    <span className="text-amber-600">Priority: High</span>
                   </div>
                   <p className="text-[11px] text-slate-500">{rec.reason}</p>
                 </div>
@@ -146,7 +194,7 @@ export default function Dashboard() {
             href="/topics"
             className="mt-4 text-center py-2 text-xs font-bold text-indigo-600 hover:text-indigo-800 transition-colors"
           >
-            Tüm Konu Ağacını İncele →
+            Explore Full Topic Matrix →
           </Link>
         </div>
 
@@ -155,3 +203,4 @@ export default function Dashboard() {
     </div>
   );
 }
+

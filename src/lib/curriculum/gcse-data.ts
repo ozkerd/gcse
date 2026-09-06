@@ -201,6 +201,72 @@ export const GCSE_TOPICS: GCSETopic[] = [
     maxGrade: 9,
     description: 'Cell division cycle, stem cell differentiation, Magnification = Image / Actual.',
   },
+
+  // English Literature
+  {
+    id: 'eng-lit-1',
+    subjectId: 'english-lit',
+    unitName: 'Shakespearean Drama',
+    topicName: 'Macbeth: Ambition, Guilt & The Supernatural',
+    tier: 'Both',
+    minGrade: 4,
+    maxGrade: 9,
+    description: 'Analyzing Lady Macbeth, dramatic irony, tragedy conventions, and Jacobean context.',
+  },
+  {
+    id: 'eng-lit-2',
+    subjectId: 'english-lit',
+    unitName: 'Poetry Anthology',
+    topicName: 'Power & Conflict Poetry: Ozymandias & Bayonet Charge',
+    tier: 'Both',
+    minGrade: 4,
+    maxGrade: 9,
+    description: 'Comparing poetic devices, structural shifts, imagery, and power dynamics.',
+  },
+
+  // History
+  {
+    id: 'hist-1',
+    subjectId: 'history',
+    unitName: 'Period Study',
+    topicName: 'Germany 1890–1945: Weimar Republic & Rise of the Nazi Party',
+    tier: 'Both',
+    minGrade: 4,
+    maxGrade: 9,
+    description: 'Treaty of Versailles impact, 1923 Hyperinflation, Munich Putsch, and Wall Street Crash.',
+  },
+  {
+    id: 'hist-2',
+    subjectId: 'history',
+    unitName: 'Conflict & Tension',
+    topicName: 'The Cold War 1945–1972: Cuban Missile Crisis & Berlin Wall',
+    tier: 'Both',
+    minGrade: 4,
+    maxGrade: 9,
+    description: 'Yalta/Potsdam, Truman Doctrine, Cuban Missile Crisis brinkmanship, and Detente.',
+  },
+
+  // Geography
+  {
+    id: 'geo-1',
+    subjectId: 'geography',
+    unitName: 'Physical Environment',
+    topicName: 'Plate Tectonics, Earthquakes & Volcanic Hazards',
+    tier: 'Both',
+    minGrade: 4,
+    maxGrade: 9,
+    description: 'Constructive, destructive, and conservative plate boundaries; tectonic management.',
+  },
+  {
+    id: 'geo-2',
+    subjectId: 'geography',
+    unitName: 'Human Environment',
+    topicName: 'Urban Issues, Sustainable Cities & Megacities',
+    tier: 'Both',
+    minGrade: 4,
+    maxGrade: 9,
+    description: 'Urban growth in LICs/NEEs, Freiburg sustainable urban living case study.',
+  },
 ];
 
 export const INITIAL_SEED_QUESTIONS: SeedQuestion[] = [
@@ -293,5 +359,88 @@ export const INITIAL_SEED_QUESTIONS: SeedQuestion[] = [
       ],
       examTip: 'Remember: PC points to the NEXT instruction, MAR holds the CURRENT address on the bus!'
     }
+  },
+  {
+    id: 'sq-eng-1',
+    topicId: 'eng-lit-1',
+    gradeLevel: 8,
+    questionText: 'In Shakespeare’s *Macbeth*, what does the metaphor "O, full of scorpions is my mind, dear wife!" signify about Macbeth’s mental state in Act 3, Scene 2?',
+    questionType: 'multiple_choice',
+    options: [
+      'His intense paranoia and torment following the murder of King Duncan',
+      'His determination to defeat Macduff on the battlefield',
+      'His grief over Lady Macbeth’s illness',
+      'His physical poisoning by the three Witches'
+    ],
+    correctAnswer: 'His intense paranoia and torment following the murder of King Duncan',
+    explanation: {
+      overview: 'The metaphor comparing his thoughts to scorpions conveys intense pain, paranoia, and psychological degradation.',
+      stepByStep: [
+        'Analyze the imagery of "scorpions": dangerous, venomous creatures causing continuous stinging pain.',
+        'Contextualize Act 3 Scene 2: Banquo is still alive and Macbeth feels insecure in his crown.',
+        'Recognize that guilt and fear of losing power are tormenting his mind constantly.'
+      ],
+      keyConcept: 'Shakespeare uses animalistic imagery to highlight Macbeth’s declining moral state and psychological disintegration.',
+      commonMistakes: [
+        'Interpreting the line literally as a physical ailment rather than psychological turmoil.'
+      ],
+      examTip: 'Always link language analysis (metaphors, motifs) directly to Jacobean context and character development!'
+    }
+  },
+  {
+    id: 'sq-hist-1',
+    topicId: 'hist-1',
+    gradeLevel: 7,
+    questionText: 'What was a primary economic consequence of the French occupation of the Ruhr in 1923 for the Weimar Republic in Germany?',
+    questionType: 'multiple_choice',
+    options: [
+      'Hyperinflation caused by the German government printing money to pay striking workers',
+      'The immediate collapse of the League of Nations',
+      'The rise of Gustav Stresemann as Chancellor of France',
+      'An economic boom due to increased domestic coal production'
+    ],
+    correctAnswer: 'Hyperinflation caused by the German government printing money to pay striking workers',
+    explanation: {
+      overview: 'Passive resistance in the Ruhr led the Weimar government to print banknotes to compensate workers, triggering hyperinflation.',
+      stepByStep: [
+        'In Jan 1923, French and Belgian troops occupied the Ruhr industrial region due to defaulted reparation payments.',
+        'German workers engaged in passive resistance (striking).',
+        'The government printed paper currency to pay strikers and cover lost tax revenue.',
+        'This hyper-inflated the German Mark, rendering money virtually worthless.'
+      ],
+      keyConcept: 'Passive resistance and reckless money printing transformed an economic shortfall into hyperinflation in 1923.',
+      commonMistakes: [
+        'Confusing the 1923 Hyperinflation Crisis with the 1929 Great Depression.'
+      ],
+      examTip: 'Structure 1923 history answers by linking Cause (Ruhr invasion) -> Reaction (Passive resistance) -> Effect (Hyperinflation).'
+    }
+  },
+  {
+    id: 'sq-geo-1',
+    topicId: 'geo-1',
+    gradeLevel: 6,
+    questionText: 'At which type of plate margin do oceanic and continental plates collide, causing the denser oceanic plate to sink beneath the continental plate into the mantle?',
+    questionType: 'multiple_choice',
+    options: [
+      'Destructive (Subduction) Margin',
+      'Constructive (Divergent) Margin',
+      'Conservative (Transform) Margin',
+      'Collision (Continental-Continental) Margin'
+    ],
+    correctAnswer: 'Destructive (Subduction) Margin',
+    explanation: {
+      overview: 'At destructive margins, the denser oceanic plate subducts under the lighter continental plate.',
+      stepByStep: [
+        'Oceanic crust is denser than continental crust.',
+        'When they converge, the oceanic plate is forced downwards into the asthenosphere (subduction).',
+        'Friction creates deep ocean trenches and explosive composite volcanoes.'
+      ],
+      keyConcept: 'Subduction occurs at destructive plate boundaries where density differences force one plate beneath another.',
+      commonMistakes: [
+        'Thinking conservative margins create volcanoes (they only cause earthquakes due to lateral sliding).'
+      ],
+      examTip: 'Use precise geological terms like "subduction zone", "trench", and "mantle convection" for top marks.'
+    }
   }
 ];
+

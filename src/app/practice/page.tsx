@@ -1,14 +1,32 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect, Suspense } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { Sparkles, HelpCircle, CheckCircle2, XCircle, ArrowRight, Lightbulb, RefreshCw, Award } from 'lucide-react';
 import { INITIAL_SEED_QUESTIONS, SeedQuestion, GCSE_TOPICS } from '@/lib/curriculum/gcse-data';
 import { KaTeXRenderer } from '@/components/KaTeXRenderer';
 import { AIGenerator, DeepExplanationResult } from '@/lib/ai/generator';
 import { DeepExplanationModal } from '@/components/DeepExplanationModal';
+import { UserStore } from '@/lib/user-store';
 
-export default function PracticePage() {
-  const [currentQuestion, setCurrentQuestion] = useState<SeedQuestion>(INITIAL_SEED_QUESTIONS[0]);
+function PracticeContent() {
+  const searchParams = useSearchParams();
+  const subjectParam = searchParams.get('subject');
+  const topicParam = searchParams.get('topic');
+
+  // Filter seed questions based on subject or topic if provided
+  const availableQuestions = INITIAL_SEED_QUESTIONS.filter(q => {
+    if (topicParam) return q.topicId === topicParam;
+    if (subjectParam) {
+      const topic = GCSE_TOPICS.find(t => t.id === q.topicId);
+      return topic?.subjectId === subjectParam;
+    }
+    return true;
+  });
+
+  const seedQuestions = availableQuestions.length > 0 ? availableQuestions : INITIAL_SEED_QUESTIONS;
+
+  const [currentQuestion, setCurrentQuestion] = useState<SeedQuestion>(seedQuestions[0]);
   const [selectedOption, setSelectedOption] = useState<string | null>(null);
   const [hasSubmitted, setHasSubmitted] = useState<boolean>(false);
   const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
@@ -17,6 +35,12 @@ export default function PracticePage() {
   const [totalAttempts, setTotalAttempts] = useState<number>(0);
   const [loadingNewQuestion, setLoadingNewQuestion] = useState<boolean>(false);
 
+  useEffect(() => {
+    if (seedQuestions.length > 0) {
+      setCurrentQuestion(seedQuestions[0]);
+    }
+  }, [subjectParam, topicParam]);
+
   const isCorrect = selectedOption === currentQuestion.correctAnswer;
   const currentTopic = GCSE_TOPICS.find(t => t.id === currentQuestion.topicId);
 
@@ -24,9 +48,14 @@ export default function PracticePage() {
     if (!selectedOption || hasSubmitted) return;
     setHasSubmitted(true);
     setTotalAttempts(prev => prev + 1);
-    if (selectedOption === currentQuestion.correctAnswer) {
+    
+    const correct = selectedOption === currentQuestion.correctAnswer;
+    if (correct) {
       setScoreCount(prev => prev + 1);
     }
+
+    // Dynamically record attempt in UserStore cookies / state
+    UserStore.recordQuestionAttempt(correct);
   };
 
   const handleOpenDeepAnalysis = async () => {
@@ -40,8 +69,8 @@ export default function PracticePage() {
     setSelectedOption(null);
     setHasSubmitted(false);
 
-    const nextIdx = (INITIAL_SEED_QUESTIONS.indexOf(currentQuestion) + 1) % INITIAL_SEED_QUESTIONS.length;
-    const nextQ = await AIGenerator.generateQuestion(INITIAL_SEED_QUESTIONS[nextIdx].topicId, 7);
+    const nextIdx = (seedQuestions.indexOf(currentQuestion) + 1) % seedQuestions.length;
+    const nextQ = await AIGenerator.generateQuestion(seedQuestions[nextIdx].topicId, 7);
     
     setCurrentQuestion(nextQ);
     setLoadingNewQuestion(false);
@@ -55,7 +84,7 @@ export default function PracticePage() {
         <div>
           <div className="flex items-center gap-2 text-xs font-bold text-indigo-600 uppercase tracking-wider">
             <Sparkles className="w-4 h-4 text-yellow-500" />
-            AI Akıllı Soru Motoru
+            AI Question Engine
           </div>
           <h1 className="text-xl font-bold text-slate-900 mt-0.5">{currentTopic?.topicName || 'GCSE Adaptive Trainer'}</h1>
         </div>
@@ -64,7 +93,7 @@ export default function PracticePage() {
         <div className="flex items-center gap-3 bg-slate-50 border border-slate-200 px-4 py-2 rounded-xl">
           <Award className="w-5 h-5 text-indigo-600" />
           <div className="text-xs">
-            <span className="text-slate-500 font-medium">Doğruluk Oranı: </span>
+            <span className="text-slate-500 font-medium">Session Accuracy: </span>
             <span className="font-extrabold text-indigo-900">
               {totalAttempts > 0 ? Math.round((scoreCount / totalAttempts) * 100) : 100}% ({scoreCount}/{totalAttempts})
             </span>
@@ -138,23 +167,23 @@ export default function PracticePage() {
               )}
               <div>
                 <h4 className="font-bold text-sm">
-                  {isCorrect ? 'Tebrikler! Doğru Cevap 🎉' : 'Neredeyse! Bu konuda biraz eksiklik var.'}
+                  {isCorrect ? 'Congratulations! Correct Answer 🎉' : 'Nearly there! Review the step-by-step solution.'}
                 </h4>
                 <p className="text-xs opacity-90">
                   {isCorrect
-                    ? 'Ustalık skorunuz yükseltildi. Yeni soru seviyesi ayarlanıyor.'
-                    : 'Daha fazla bilgi butonuna basarak adım adım çözümü ve teorik özeti inceleyebilirsiniz.'}
+                    ? 'Topic mastery score increased. Preparing next difficulty level.'
+                    : 'Click "Deep Analysis & Hint" to review examiner mark schemes and concept summaries.'}
                 </p>
               </div>
             </div>
 
-            {/* "Daha Fazla Bilgi" Button */}
+            {/* Deep Analysis Button */}
             <button
               onClick={handleOpenDeepAnalysis}
               className="inline-flex items-center gap-2 px-4 py-2.5 bg-yellow-400 hover:bg-yellow-500 text-slate-900 font-bold rounded-xl text-xs shadow-md transition-transform hover:scale-105 shrink-0"
             >
               <Lightbulb className="w-4 h-4 text-slate-900" />
-              <span>Daha Fazla Bilgi</span>
+              <span>Deep Analysis & Hint</span>
             </button>
           </div>
         )}
@@ -162,14 +191,13 @@ export default function PracticePage() {
         {/* Action Controls */}
         <div className="flex items-center justify-between pt-4 border-t border-slate-100">
           
-          {/* Direct "Daha Fazla Bilgi" Trigger before answering */}
           {!hasSubmitted && (
             <button
               onClick={handleOpenDeepAnalysis}
               className="inline-flex items-center gap-2 px-4 py-2.5 text-slate-600 hover:text-indigo-600 font-semibold text-xs transition-colors"
             >
               <HelpCircle className="w-4 h-4 text-indigo-500" />
-              <span>İpucu & Daha Fazla Bilgi İstiyorum</span>
+              <span>Request Hint & Formula Help</span>
             </button>
           )}
 
@@ -184,7 +212,7 @@ export default function PracticePage() {
                     : 'bg-slate-200 text-slate-400 cursor-not-allowed'
                 }`}
               >
-                Cevabı Gönder
+                Submit Answer
               </button>
             ) : (
               <button
@@ -195,11 +223,11 @@ export default function PracticePage() {
                 {loadingNewQuestion ? (
                   <>
                     <RefreshCw className="w-4 h-4 animate-spin" />
-                    <span>Yeni Soru Türetiliyor...</span>
+                    <span>Generating Next Question...</span>
                   </>
                 ) : (
                   <>
-                    <span>Sonraki Soruya Geç</span>
+                    <span>Next Question</span>
                     <ArrowRight className="w-4 h-4" />
                   </>
                 )}
@@ -224,3 +252,17 @@ export default function PracticePage() {
     </div>
   );
 }
+
+export default function PracticePage() {
+  return (
+    <Suspense fallback={
+      <div className="p-8 text-center text-slate-500 font-medium">
+        Loading Question Engine...
+      </div>
+    }>
+      <PracticeContent />
+    </Suspense>
+  );
+}
+
+

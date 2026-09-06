@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import { Award, Clock, ArrowRight } from 'lucide-react';
 import { INITIAL_SEED_QUESTIONS } from '@/lib/curriculum/gcse-data';
 import { KaTeXRenderer } from '@/components/KaTeXRenderer';
+import { UserStore } from '@/lib/user-store';
 import Link from 'next/link';
 
 export default function MockExamPage() {
@@ -29,6 +30,13 @@ export default function MockExamPage() {
 
   const handleSubmitExam = () => {
     setIsExamSubmitted(true);
+    // Record solved questions for stats
+    Object.keys(userAnswers).forEach(qId => {
+      const q = mockQuestions.find(m => m.id === qId);
+      if (q) {
+        UserStore.recordQuestionAttempt(userAnswers[qId] === q.correctAnswer);
+      }
+    });
   };
 
   let totalScore = 0;
@@ -46,19 +54,19 @@ export default function MockExamPage() {
             <Award className="w-4 h-4 text-purple-600" />
             Mock GCSE Exam Engine
           </div>
-          <h1 className="text-2xl font-extrabold text-slate-900 mt-1">Gerçek Format GCSE Deneme Sınavı</h1>
-          <p className="text-slate-500 text-sm">AQA, Edexcel ve OCR resmi sınav formatında süreli mock sınavlar.</p>
+          <h1 className="text-2xl font-extrabold text-slate-900 mt-1">Realistic GCSE Mock Examination</h1>
+          <p className="text-slate-500 text-sm">Timed mock papers modeled directly on AQA, Edexcel, and OCR specification standards.</p>
         </div>
       </div>
 
       {!isExamStarted ? (
         /* Setup Options */
         <div className="bg-white rounded-2xl p-6 sm:p-8 border border-slate-200 shadow-md space-y-6">
-          <h2 className="text-lg font-bold text-slate-900 border-b border-slate-100 pb-3">Deneme Sınavı Yapılandırması</h2>
+          <h2 className="text-lg font-bold text-slate-900 border-b border-slate-100 pb-3">Mock Exam Configuration</h2>
 
           <div className="grid sm:grid-cols-2 gap-4">
             <div>
-              <label className="block text-xs font-bold text-slate-700 uppercase mb-2">Sınav Modu</label>
+              <label className="block text-xs font-bold text-slate-700 uppercase mb-2">Exam Mode</label>
               <div className="grid grid-cols-2 gap-2">
                 <button
                   onClick={() => setExamMode('full')}
@@ -66,7 +74,7 @@ export default function MockExamPage() {
                     examMode === 'full' ? 'bg-indigo-600 text-white border-indigo-600' : 'bg-slate-50 text-slate-700 border-slate-200'
                   }`}
                 >
-                  Tam Mock Sınavı (80 Puan)
+                  Full Mock Paper (80 Marks)
                 </button>
                 <button
                   onClick={() => setExamMode('topic')}
@@ -74,13 +82,13 @@ export default function MockExamPage() {
                     examMode === 'topic' ? 'bg-indigo-600 text-white border-indigo-600' : 'bg-slate-50 text-slate-700 border-slate-200'
                   }`}
                 >
-                  Konu Bazlı Sınav (Modular)
+                  Modular Topic Exam
                 </button>
               </div>
             </div>
 
             <div>
-              <label className="block text-xs font-bold text-slate-700 uppercase mb-2">Sınav Kurulu (Exam Board)</label>
+              <label className="block text-xs font-bold text-slate-700 uppercase mb-2">Exam Board Specification</label>
               <select
                 value={selectedBoard}
                 onChange={(e) => setSelectedBoard(e.target.value)}
@@ -96,8 +104,8 @@ export default function MockExamPage() {
           <div className="p-4 bg-indigo-50/80 border border-indigo-100 rounded-xl flex items-start gap-3">
             <Clock className="w-5 h-5 text-indigo-600 shrink-0 mt-0.5" />
             <div className="text-xs text-indigo-950">
-              <span className="font-bold block mb-0.5">Süre ve Notlandırma Kuralı:</span>
-              Mock sınavlar resmi GCSE süre sınırlarına tabidir. Cevaplarınız detaylı alt konu kategorilerine göre ayrıştırılacak ve otomatik Grade (1-9) hesabı yapılacaktır.
+              <span className="font-bold block mb-0.5">Time Limit & Grading Rules:</span>
+              Mock exams adhere to official GCSE time limits. Your answers are evaluated against subtopic specifications to calculate your predicted GCSE Grade (1–9).
             </div>
           </div>
 
@@ -106,7 +114,7 @@ export default function MockExamPage() {
               onClick={handleStartExam}
               className="inline-flex items-center gap-2 px-8 py-3.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-sm shadow-lg shadow-indigo-500/20 transition-all"
             >
-              <span>Mock Sınavı Başlat (Süreli)</span>
+              <span>Start Timed Mock Exam</span>
               <ArrowRight className="w-4 h-4" />
             </button>
           </div>
@@ -116,11 +124,11 @@ export default function MockExamPage() {
         <div className="bg-white rounded-2xl p-6 sm:p-8 border border-slate-200 shadow-md space-y-6">
           <div className="flex items-center justify-between border-b border-slate-100 pb-4">
             <span className="text-xs font-bold text-indigo-600 font-mono">
-              {selectedBoard} {selectedSubject.toUpperCase()} Paper 1 — Question {currentIndex + 1} / {mockQuestions.length}
+              {selectedBoard} {selectedSubject.toUpperCase()} Paper 1 — Question {currentIndex + 1} of {mockQuestions.length}
             </span>
             <div className="flex items-center gap-2 px-3 py-1 bg-amber-50 text-amber-800 rounded-full font-mono text-xs font-bold">
               <Clock className="w-4 h-4 text-amber-600" />
-              <span>Süre Kalan: 84:12</span>
+              <span>Time Remaining: 84:12</span>
             </div>
           </div>
 
@@ -153,7 +161,7 @@ export default function MockExamPage() {
               disabled={currentIndex === 0}
               className="px-4 py-2 text-xs font-bold text-slate-600 hover:text-slate-900 disabled:opacity-50"
             >
-              Önceki Soru
+              Previous Question
             </button>
 
             {currentIndex + 1 < mockQuestions.length ? (
@@ -161,14 +169,14 @@ export default function MockExamPage() {
                 onClick={() => setCurrentIndex(currentIndex + 1)}
                 className="px-6 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs rounded-xl shadow"
               >
-                Sonraki Soru
+                Next Question
               </button>
             ) : (
               <button
                 onClick={handleSubmitExam}
                 className="px-6 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl shadow"
               >
-                Sınavı Bitir ve Notlandır
+                Submit Exam & Calculate Grade
               </button>
             )}
           </div>
@@ -179,19 +187,19 @@ export default function MockExamPage() {
           <div className="w-16 h-16 rounded-full bg-purple-100 text-purple-600 flex items-center justify-center mx-auto">
             <Award className="w-8 h-8" />
           </div>
-          <h2 className="text-2xl font-extrabold text-slate-900">Mock Sınav Değerlendirmesi Tamamlandı</h2>
-          <div className="text-4xl font-extrabold text-indigo-600">Grade 8 ({totalScore} / 30 Puan)</div>
+          <h2 className="text-2xl font-extrabold text-slate-900">Mock Exam Assessment Completed</h2>
+          <div className="text-4xl font-extrabold text-indigo-600">Grade 8 ({totalScore} / 30 Marks)</div>
 
           <div className="p-4 bg-slate-50 border border-slate-200 rounded-xl text-left text-xs space-y-2 max-w-md mx-auto">
-            <span className="font-bold text-slate-900 block">Alt Konu Başlığı Başarı Oranı:</span>
-            <div className="flex justify-between"><span>Quadratic Factoring (M-ALG-1.1):</span><span className="font-bold text-emerald-600">%100</span></div>
-            <div className="flex justify-between"><span>Specific Heat Capacity (P-ENG-1.1):</span><span className="font-bold text-emerald-600">%100</span></div>
-            <div className="flex justify-between"><span>CPU Registers (CS-SYS-1.1):</span><span className="font-bold text-amber-600">%50</span></div>
+            <span className="font-bold text-slate-900 block">Subtopic Performance Score:</span>
+            <div className="flex justify-between"><span>Quadratic Factoring (M-ALG-1.1):</span><span className="font-bold text-emerald-600">100%</span></div>
+            <div className="flex justify-between"><span>Specific Heat Capacity (P-ENG-1.1):</span><span className="font-bold text-emerald-600">100%</span></div>
+            <div className="flex justify-between"><span>CPU Registers (CS-SYS-1.1):</span><span className="font-bold text-amber-600">50%</span></div>
           </div>
 
           <div className="pt-2 flex justify-center gap-4">
             <Link href="/parent" className="px-6 py-3 bg-indigo-600 text-white font-bold text-xs rounded-xl shadow">
-              Veli Paneline Raporu Gönder
+              Send Report to Parent Portal
             </Link>
           </div>
         </div>
@@ -200,3 +208,4 @@ export default function MockExamPage() {
     </div>
   );
 }
+

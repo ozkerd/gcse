@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { GCSE_SUBJECTS, GCSE_TOPICS } from '@/lib/curriculum/gcse-data';
-import { BookOpen, Award, Sparkles, CheckCircle2, ArrowRight } from 'lucide-react';
+import { BookOpen, ArrowRight } from 'lucide-react';
 import Link from 'next/link';
 
 export default function TopicsPage() {
@@ -11,8 +11,8 @@ export default function TopicsPage() {
       
       {/* Header */}
       <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
-        <h1 className="text-2xl font-extrabold text-slate-900">GCSE Konu Ağacı & Ustalık Matrisi</h1>
-        <p className="text-slate-500 text-sm">Tüm dersler, konu üniteleri ve Grade 1-9 zorluk seviyeleri.</p>
+        <h1 className="text-2xl font-extrabold text-slate-900">GCSE Specification Topic Matrix</h1>
+        <p className="text-slate-500 text-sm">Comprehensive subject units, subtopics, and Grade 1–9 difficulty mappings.</p>
       </div>
 
       {/* Subject Groups */}
@@ -51,7 +51,7 @@ export default function TopicsPage() {
                       href={`/practice?topic=${topic.id}`}
                       className="inline-flex items-center justify-center gap-2 py-2 px-3 bg-white hover:bg-indigo-50 hover:text-indigo-700 font-bold text-xs text-slate-800 rounded-lg border border-slate-200 transition-colors"
                     >
-                      <span>Soru Çöz & Ustalık Artır</span>
+                      <span>Practice Topic Questions</span>
                       <ArrowRight className="w-3.5 h-3.5" />
                     </Link>
                   </div>
@@ -65,3 +65,4 @@ export default function TopicsPage() {
     </div>
   );
 }
+
