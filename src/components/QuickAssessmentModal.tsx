@@ -278,9 +278,14 @@ export function QuickAssessmentModal({ isOpen, onClose }: QuickAssessmentModalPr
                 <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">
                   Question {currentIndex + 1} of {questions.length} • Year {selectedYear}
                 </span>
-                <span className="text-xs font-semibold px-2.5 py-1 bg-indigo-50 dark:bg-indigo-950/50 text-indigo-600 dark:text-indigo-400 rounded-full border border-indigo-200 dark:border-indigo-800">
-                  Target Grade {currentQ.gradeLevel}
-                </span>
+                <div className="flex items-center gap-1.5">
+                  <span className="text-xs font-semibold px-2.5 py-1 bg-purple-50 dark:bg-purple-950/50 text-purple-700 dark:text-purple-300 rounded-full border border-purple-200 dark:border-purple-800">
+                    📜 {currentQ.examBoard || 'AQA'} {currentQ.paperYear || 2023}
+                  </span>
+                  <span className="text-xs font-semibold px-2.5 py-1 bg-indigo-50 dark:bg-indigo-950/50 text-indigo-600 dark:text-indigo-400 rounded-full border border-indigo-200 dark:border-indigo-800">
+                    Target Grade {currentQ.gradeLevel}
+                  </span>
+                </div>
               </div>
 
               {/* Question Text */}

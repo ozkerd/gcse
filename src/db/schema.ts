@@ -53,6 +53,9 @@ export const questions = sqliteTable('questions', {
   subtopicId: text('subtopic_id').references(() => subtopics.id),
   subtopicCode: text('subtopic_code'),
   gradeLevel: integer('grade_level').notNull().default(6),
+  examBoard: text('exam_board').default('AQA'),
+  paperYear: integer('paper_year').default(2023),
+  paperName: text('paper_name').default('Paper 1H'),
   examType: text('exam_type').default('practice'), // practice, mock_exam, topic_test, diagnostic
   questionText: text('question_text').notNull(),
   questionType: text('question_type').notNull().default('multiple_choice'),

@@ -156,6 +156,9 @@ function PracticeContent() {
               <Sparkles className="w-3.5 h-3.5 text-yellow-500" />
               Target Grade {currentQuestion.gradeLevel} Question
             </span>
+            <span className="px-3 py-1 bg-purple-50 border border-purple-200 text-purple-900 rounded-full text-xs font-semibold flex items-center gap-1">
+              📜 {currentQuestion.examBoard || 'AQA'} {currentQuestion.paperYear || 2023} ({currentQuestion.paperName || 'Paper 1'})
+            </span>
             {currentQuestion.subtopicName && (
               <span className="px-3 py-1 bg-amber-50 border border-amber-200 text-amber-900 rounded-full text-xs font-semibold flex items-center gap-1">
                 🎯 {currentQuestion.subtopicName}

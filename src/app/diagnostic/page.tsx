@@ -237,9 +237,14 @@ export default function DiagnosticPage() {
 
           {/* Question Text */}
           <div className="bg-slate-50 border border-slate-200/80 rounded-xl p-5">
-            <span className="inline-block px-2.5 py-1 bg-indigo-100 text-indigo-800 rounded font-mono text-[11px] font-bold mb-3">
-              GCSE Level {currentQuestion.gradeLevel} Question
-            </span>
+            <div className="flex flex-wrap items-center gap-2 mb-3">
+              <span className="inline-block px-2.5 py-1 bg-indigo-100 text-indigo-800 rounded font-mono text-[11px] font-bold">
+                GCSE Level {currentQuestion.gradeLevel} Question
+              </span>
+              <span className="inline-block px-2.5 py-1 bg-purple-100 text-purple-900 rounded font-mono text-[11px] font-bold">
+                📜 {currentQuestion.examBoard || 'AQA'} {currentQuestion.paperYear || 2023} ({currentQuestion.paperName || 'Paper 1'})
+              </span>
+            </div>
             <div className="text-base sm:text-lg font-bold text-slate-900 leading-relaxed">
               <KaTeXRenderer content={currentQuestion.questionText} />
             </div>
