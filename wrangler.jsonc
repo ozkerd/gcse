@@ -3,14 +3,12 @@
   "name": "gcse-primerllm",
   "compatibility_date": "2026-08-30",
   "pages_build_output_dir": ".vercel/output/static",
-  "routes": [
-    { "pattern": "gcse.primerllm.com", "custom_domain": true }
-  ],
+
   "d1_databases": [
     {
       "binding": "DB",
       "database_name": "gcse-db",
-      "database_id": "gcse-d1-db-id"
+      "database_id": "95f7b2c2-cf3a-490b-b7c3-400f5466834a"
     }
   ],
   "compatibility_flags": [
