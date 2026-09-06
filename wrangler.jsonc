@@ -1,0 +1,19 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "gcse-primerllm",
+  "compatibility_date": "2026-08-30",
+  "pages_build_output_dir": ".vercel/output/static",
+  "routes": [
+    { "pattern": "gcse.primerllm.com", "custom_domain": true }
+  ],
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "gcse-db",
+      "database_id": "gcse-d1-db-id"
+    }
+  ],
+  "compatibility_flags": [
+    "nodejs_compat"
+  ]
+}
