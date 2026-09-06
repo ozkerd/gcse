@@ -7,6 +7,7 @@ import { Brain, LayoutDashboard, Target, Calendar, BookOpen, Sparkles, Award, Us
 import { UserStore, UserSession } from '@/lib/user-store';
 import { AuthModal } from '@/components/AuthModal';
 import { QuickAssessmentModal } from '@/components/QuickAssessmentModal';
+import { ThemeToggle } from '@/components/ThemeToggle';
 
 export const Navbar = () => {
   const pathname = usePathname();
@@ -83,10 +84,13 @@ export const Navbar = () => {
 
           {/* User Account & Actions */}
           <div className="flex items-center gap-2 sm:gap-3">
+            {/* Dark / Light Mode Toggle */}
+            <ThemeToggle showLabel={false} className="h-8 shrink-0" />
+
             {/* Quick 5-Question Snapshot Launcher */}
             <button
               onClick={() => setIsQuickAssessmentOpen(true)}
-              className="flex items-center gap-1.5 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white px-3 py-1.5 rounded-xl text-xs font-bold transition-all shadow-md active:scale-95"
+              className="flex items-center gap-1.5 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white px-3 py-1.5 rounded-xl text-xs font-bold transition-all shadow-md active:scale-95 shrink-0"
             >
               <Zap className="w-3.5 h-3.5 fill-white" />
               <span>Quick 5 Test</span>
