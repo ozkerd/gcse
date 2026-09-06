@@ -2,8 +2,7 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
-import { Target, Award, Sparkles, TrendingUp, Calendar, BookOpen, AlertCircle, ArrowRight, CheckCircle, RefreshCw } from 'lucide-react';
-import { GCSE_SUBJECTS, GCSE_TOPICS } from '@/lib/curriculum/gcse-data';
+import { Award, Sparkles, TrendingUp, Calendar, AlertCircle, ArrowRight, CheckCircle, RefreshCw } from 'lucide-react';
 import { AdaptiveEngine } from '@/lib/adaptive/engine';
 
 export default function Dashboard() {
@@ -11,7 +10,6 @@ export default function Dashboard() {
   const [estimatedGrade, setEstimatedGrade] = useState<number>(6.5);
   const [streakDays, setStreakDays] = useState<number>(4);
 
-  // Mock progress state
   const mockMasteries = [
     { topicId: 'm-alg-1', masteryScore: 78.0, totalAttempted: 18, totalCorrect: 14, lastAttemptAt: '2026-09-05' },
     { topicId: 'm-alg-2', masteryScore: 42.0, totalAttempted: 10, totalCorrect: 4, lastAttemptAt: '2026-09-04' },

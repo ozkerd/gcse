@@ -3,7 +3,7 @@
 import React from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Brain, LayoutDashboard, Target, Calendar, BookOpen, Sparkles, Award } from 'lucide-react';
+import { Brain, LayoutDashboard, Target, Calendar, BookOpen, Sparkles, Award, Users, FileText } from 'lucide-react';
 
 export const Navbar = () => {
   const pathname = usePathname();
@@ -12,8 +12,10 @@ export const Navbar = () => {
     { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
     { href: '/diagnostic', label: 'Seviye Tesbiti', icon: Target },
     { href: '/practice', label: 'Akıllı Soru Motoru', icon: Sparkles },
+    { href: '/mock-exam', label: 'Mock Sınavlar', icon: FileText },
     { href: '/topics', label: 'Konu Matrisi', icon: BookOpen },
     { href: '/calendar', label: 'Çalışma Takvimi', icon: Calendar },
+    { href: '/parent', label: 'Veli Portalı', icon: Users },
   ];
 
   return (
@@ -43,13 +45,13 @@ export const Navbar = () => {
               <Link
                 key={item.href}
                 href={item.href}
-                className={`flex items-center gap-2 px-3.5 py-2 rounded-lg text-sm font-medium transition-all ${
+                className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold transition-all ${
                   isActive
-                    ? 'bg-indigo-50 text-indigo-700 font-semibold shadow-sm'
+                    ? 'bg-indigo-50 text-indigo-700 font-bold shadow-sm'
                     : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100/80'
                 }`}
               >
-                <Icon className={`w-4 h-4 ${isActive ? 'text-indigo-600' : 'text-slate-400'}`} />
+                <Icon className={`w-3.5 h-3.5 ${isActive ? 'text-indigo-600' : 'text-slate-400'}`} />
                 <span>{item.label}</span>
               </Link>
             );

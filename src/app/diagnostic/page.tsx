@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Target, CheckCircle2, XCircle, ArrowRight, Award, RefreshCw, Sparkles, BookOpen } from 'lucide-react';
+import { Target, CheckCircle2, ArrowRight, Award } from 'lucide-react';
 import { INITIAL_SEED_QUESTIONS, SeedQuestion } from '@/lib/curriculum/gcse-data';
 import { KaTeXRenderer } from '@/components/KaTeXRenderer';
 import { AdaptiveEngine, DiagnosticResult } from '@/lib/adaptive/engine';
@@ -28,7 +28,6 @@ export default function DiagnosticPage() {
       setCurrentIndex(currentIndex + 1);
       setSelectedOption(null);
     } else {
-      // Diagnostic complete
       const evalResult = AdaptiveEngine.evaluateDiagnosticTest(newAttempts);
       setResult(evalResult);
       setIsCompleted(true);

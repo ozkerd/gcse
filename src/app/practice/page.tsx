@@ -1,7 +1,7 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
-import { Sparkles, HelpCircle, CheckCircle2, XCircle, ArrowRight, Lightbulb, RefreshCw, Award, BookOpen } from 'lucide-react';
+import React, { useState } from 'react';
+import { Sparkles, HelpCircle, CheckCircle2, XCircle, ArrowRight, Lightbulb, RefreshCw, Award } from 'lucide-react';
 import { INITIAL_SEED_QUESTIONS, SeedQuestion, GCSE_TOPICS } from '@/lib/curriculum/gcse-data';
 import { KaTeXRenderer } from '@/components/KaTeXRenderer';
 import { AIGenerator, DeepExplanationResult } from '@/lib/ai/generator';
@@ -40,7 +40,6 @@ export default function PracticePage() {
     setSelectedOption(null);
     setHasSubmitted(false);
 
-    // Pick next dynamic question
     const nextIdx = (INITIAL_SEED_QUESTIONS.indexOf(currentQuestion) + 1) % INITIAL_SEED_QUESTIONS.length;
     const nextQ = await AIGenerator.generateQuestion(INITIAL_SEED_QUESTIONS[nextIdx].topicId, 7);
     

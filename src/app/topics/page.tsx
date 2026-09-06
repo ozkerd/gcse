@@ -19,6 +19,8 @@ export default function TopicsPage() {
       <div className="space-y-8">
         {GCSE_SUBJECTS.map(subject => {
           const subjectTopics = GCSE_TOPICS.filter(t => t.subjectId === subject.id);
+          const boardsText = subject.supportedBoards ? subject.supportedBoards.join(', ') : 'AQA, Edexcel';
+
           return (
             <div key={subject.id} className="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm space-y-4">
               <div className="flex items-center justify-between border-b border-slate-100 pb-3">
@@ -28,7 +30,7 @@ export default function TopicsPage() {
                   </div>
                   <div>
                     <h2 className="text-lg font-bold text-slate-900">{subject.name}</h2>
-                    <span className="text-xs text-slate-500">{subject.examBoard} ({subject.code})</span>
+                    <span className="text-xs text-slate-500">{boardsText} ({subject.code})</span>
                   </div>
                 </div>
               </div>

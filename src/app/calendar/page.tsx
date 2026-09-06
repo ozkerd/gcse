@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { Calendar as CalendarIcon, CheckCircle2, Clock, Flame, Target, BookOpen, ChevronRight } from 'lucide-react';
+import { Calendar as CalendarIcon, Flame, ChevronRight } from 'lucide-react';
 
 export default function CalendarPage() {
   const schedule = [
