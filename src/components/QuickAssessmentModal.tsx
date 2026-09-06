@@ -1,9 +1,9 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { X, CheckCircle2, XCircle, Sparkles, ArrowRight, Award, Zap, RefreshCw, BookOpen } from 'lucide-react';
+import { X, CheckCircle2, XCircle, Sparkles, ArrowRight, Award, Zap, RefreshCw, BookOpen, GraduationCap, Filter } from 'lucide-react';
 import { AdaptiveEngine } from '@/lib/adaptive/engine';
-import { SeedQuestion, GCSE_TOPICS, GCSE_SUBJECTS } from '@/lib/curriculum/gcse-data';
+import { SeedQuestion, GCSE_TOPICS, GCSE_SUBJECTS, GCSETopic } from '@/lib/curriculum/gcse-data';
 import { UserStore } from '@/lib/user-store';
 import { KaTeXRenderer } from './KaTeXRenderer';
 
@@ -13,27 +13,62 @@ interface QuickAssessmentModalProps {
 }
 
 export function QuickAssessmentModal({ isOpen, onClose }: QuickAssessmentModalProps) {
+  const [step, setStep] = useState<'setup' | 'test' | 'results'>('setup');
+  const [selectedYear, setSelectedYear] = useState<number>(10);
+  const [mode, setMode] = useState<'random' | 'specific'>('random');
+  const [selectedSubjectId, setSelectedSubjectId] = useState<string>('maths');
+  const [selectedTopicId, setSelectedTopicId] = useState<string>('m-alg-1');
+
   const [questions, setQuestions] = useState<SeedQuestion[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [selectedOption, setSelectedOption] = useState<string | null>(null);
   const [isAnswered, setIsAnswered] = useState(false);
   const [userAnswers, setUserAnswers] = useState<{ isCorrect: boolean; question: SeedQuestion }[]>([]);
-  const [isFinished, setIsFinished] = useState(false);
 
   useEffect(() => {
     if (isOpen) {
-      // Load 5 snapshot questions
-      const qList = AdaptiveEngine.getQuickSnapshotQuestions(5);
-      setQuestions(qList);
+      setStep('setup');
       setCurrentIndex(0);
       setSelectedOption(null);
       setIsAnswered(false);
       setUserAnswers([]);
-      setIsFinished(false);
     }
   }, [isOpen]);
 
   if (!isOpen) return null;
+
+  // Filter topics for chosen subject
+  const subjectTopics = GCSE_TOPICS.filter((t) => t.subjectId === selectedSubjectId);
+
+  const startTest = () => {
+    // Determine target grade based on Year Group
+    // Year 8: Grade 4-5 | Year 9: Grade 5-6 | Year 10: Grade 6-7 | Year 11: Grade 7-9
+    const yearGradeMap: Record<number, number> = { 8: 4, 9: 5, 10: 6, 11: 8 };
+    const targetGrade = yearGradeMap[selectedYear] || 6;
+
+    let qList: SeedQuestion[] = [];
+
+    if (mode === 'specific') {
+      // Pull or adapt questions specifically for the selected topic
+      for (let i = 0; i < 5; i++) {
+        const q = AdaptiveEngine.getAdaptiveQuestionForTopic(selectedTopicId, targetGrade);
+        qList.push({
+          ...q,
+          id: `quick-${selectedTopicId}-${i}-${Date.now()}`,
+          gradeLevel: targetGrade,
+        });
+      }
+    } else {
+      // Random questions across all topics filtered for Year Group grade level
+      qList = AdaptiveEngine.getQuickSnapshotQuestions(5).map((q) => ({
+        ...q,
+        gradeLevel: targetGrade,
+      }));
+    }
+
+    setQuestions(qList);
+    setStep('test');
+  };
 
   const currentQ = questions[currentIndex];
   const progressPercent = ((currentIndex + (isAnswered ? 1 : 0)) / (questions.length || 5)) * 100;
@@ -62,12 +97,13 @@ export function QuickAssessmentModal({ isOpen, onClose }: QuickAssessmentModalPr
       setSelectedOption(null);
       setIsAnswered(false);
     } else {
-      setIsFinished(true);
+      setStep('results');
     }
   };
 
   const score = userAnswers.filter((a) => a.isCorrect).length;
-  const estimatedGrade = Math.min(9, Math.max(4, Math.round(4 + (score / 5) * 5)));
+  const yearBaselineGrade: Record<number, number> = { 8: 4, 9: 5, 10: 6, 11: 7 };
+  const estimatedGrade = Math.min(9, Math.max(4, Math.round((yearBaselineGrade[selectedYear] || 6) + (score / 5) * 2)));
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/80 backdrop-blur-sm animate-in fade-in duration-200">
@@ -81,12 +117,12 @@ export function QuickAssessmentModal({ isOpen, onClose }: QuickAssessmentModalPr
             </div>
             <div>
               <h2 className="text-lg font-bold flex items-center gap-2">
-                5-Question Quick Assessment
+                5-Question Quick Test
                 <span className="text-xs bg-yellow-400 text-slate-900 font-extrabold px-2 py-0.5 rounded-full">
-                  Hap Test
+                  Adaptive
                 </span>
               </h2>
-              <p className="text-xs text-indigo-100">Adaptive Snapshot across GCSE Subjects</p>
+              <p className="text-xs text-indigo-100">Customized by School Year & Topic Selection</p>
             </div>
           </div>
 
@@ -98,21 +134,147 @@ export function QuickAssessmentModal({ isOpen, onClose }: QuickAssessmentModalPr
           </button>
         </div>
 
-        {/* Progress bar */}
-        <div className="w-full bg-slate-100 dark:bg-slate-800 h-2 shrink-0">
-          <div
-            className="bg-gradient-to-r from-amber-400 via-indigo-500 to-emerald-400 h-2 transition-all duration-300"
-            style={{ width: `${progressPercent}%` }}
-          />
-        </div>
+        {/* Progress bar (during test) */}
+        {step === 'test' && (
+          <div className="w-full bg-slate-100 dark:bg-slate-800 h-2 shrink-0">
+            <div
+              className="bg-gradient-to-r from-amber-400 via-indigo-500 to-emerald-400 h-2 transition-all duration-300"
+              style={{ width: `${progressPercent}%` }}
+            />
+          </div>
+        )}
 
         {/* Body content */}
         <div className="p-6 overflow-y-auto flex-1">
-          {!isFinished && currentQ ? (
+          {step === 'setup' ? (
+            /* Setup Screen */
+            <div className="space-y-6">
+              
+              {/* Year Group Selection */}
+              <div>
+                <label className="block text-xs font-extrabold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-2 flex items-center gap-1.5">
+                  <GraduationCap className="w-4 h-4 text-indigo-600" />
+                  Select Your School Year Group
+                </label>
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                  {[
+                    { year: 8, label: 'Year 8', desc: 'Foundation' },
+                    { year: 9, label: 'Year 9', desc: 'Pre-GCSE' },
+                    { year: 10, label: 'Year 10', desc: 'GCSE Core' },
+                    { year: 11, label: 'Year 11', desc: 'Final GCSE' },
+                  ].map((y) => (
+                    <button
+                      key={y.year}
+                      onClick={() => setSelectedYear(y.year)}
+                      className={`p-3.5 rounded-2xl border-2 text-center transition-all ${
+                        selectedYear === y.year
+                          ? 'border-indigo-600 bg-indigo-50 dark:bg-indigo-950/60 font-bold text-indigo-900 dark:text-indigo-200 shadow-sm'
+                          : 'border-slate-200 dark:border-slate-800 hover:border-indigo-300 text-slate-700 dark:text-slate-300'
+                      }`}
+                    >
+                      <div className="text-base font-extrabold">{y.label}</div>
+                      <div className="text-[11px] opacity-80">{y.desc}</div>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Topic Selection Mode */}
+              <div>
+                <label className="block text-xs font-extrabold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-2 flex items-center gap-1.5">
+                  <Filter className="w-4 h-4 text-indigo-600" />
+                  Select Test Mode & Topic Coverage
+                </label>
+                <div className="grid grid-cols-2 gap-3 mb-4">
+                  <button
+                    onClick={() => setMode('random')}
+                    className={`p-4 rounded-2xl border-2 text-left transition-all ${
+                      mode === 'random'
+                        ? 'border-indigo-600 bg-indigo-50 dark:bg-indigo-950/60 font-bold text-indigo-900 dark:text-indigo-200'
+                        : 'border-slate-200 dark:border-slate-800 hover:border-indigo-300 text-slate-700 dark:text-slate-300'
+                    }`}
+                  >
+                    <div className="flex items-center gap-2 text-sm font-bold mb-1">
+                      <Sparkles className="w-4 h-4 text-amber-500" />
+                      Random All Topics (Mixed)
+                    </div>
+                    <p className="text-xs opacity-80 font-normal">
+                      5 random questions across all GCSE subjects tailored for Year {selectedYear}.
+                    </p>
+                  </button>
+
+                  <button
+                    onClick={() => setMode('specific')}
+                    className={`p-4 rounded-2xl border-2 text-left transition-all ${
+                      mode === 'specific'
+                        ? 'border-indigo-600 bg-indigo-50 dark:bg-indigo-950/60 font-bold text-indigo-900 dark:text-indigo-200'
+                        : 'border-slate-200 dark:border-slate-800 hover:border-indigo-300 text-slate-700 dark:text-slate-300'
+                    }`}
+                  >
+                    <div className="flex items-center gap-2 text-sm font-bold mb-1">
+                      <BookOpen className="w-4 h-4 text-indigo-600" />
+                      Specific Subject & Topic
+                    </div>
+                    <p className="text-xs opacity-80 font-normal">
+                      Choose a specific topic (e.g. Quadratics, Macbeth, Cold War) to test.
+                    </p>
+                  </button>
+                </div>
+
+                {/* Specific Subject & Topic Dropdowns */}
+                {mode === 'specific' && (
+                  <div className="p-4 bg-slate-50 dark:bg-slate-800/60 rounded-2xl border border-slate-200 dark:border-slate-800 space-y-3 animate-in fade-in">
+                    <div>
+                      <label className="block text-xs font-bold text-slate-600 dark:text-slate-400 mb-1">Subject</label>
+                      <select
+                        value={selectedSubjectId}
+                        onChange={(e) => {
+                          setSelectedSubjectId(e.target.value);
+                          const firstTopic = GCSE_TOPICS.find((t) => t.subjectId === e.target.value);
+                          if (firstTopic) setSelectedTopicId(firstTopic.id);
+                        }}
+                        className="w-full p-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 font-semibold text-sm text-slate-800 dark:text-slate-100"
+                      >
+                        {GCSE_SUBJECTS.map((s) => (
+                          <option key={s.id} value={s.id}>
+                            {s.name} ({s.code})
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-bold text-slate-600 dark:text-slate-400 mb-1">Specific Topic</label>
+                      <select
+                        value={selectedTopicId}
+                        onChange={(e) => setSelectedTopicId(e.target.value)}
+                        className="w-full p-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 font-semibold text-sm text-slate-800 dark:text-slate-100"
+                      >
+                        {subjectTopics.map((t) => (
+                          <option key={t.id} value={t.id}>
+                            {t.topicName} ({t.unitName})
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Start Test Button */}
+              <button
+                onClick={startTest}
+                className="w-full py-4 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white font-extrabold text-base rounded-2xl shadow-lg transition-all flex items-center justify-center gap-2 active:scale-95"
+              >
+                <span>Start 5-Question Test</span>
+                <ArrowRight className="w-5 h-5" />
+              </button>
+            </div>
+          ) : step === 'test' && currentQ ? (
             <div>
               <div className="flex items-center justify-between mb-4">
                 <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">
-                  Question {currentIndex + 1} of {questions.length}
+                  Question {currentIndex + 1} of {questions.length} • Year {selectedYear}
                 </span>
                 <span className="text-xs font-semibold px-2.5 py-1 bg-indigo-50 dark:bg-indigo-950/50 text-indigo-600 dark:text-indigo-400 rounded-full border border-indigo-200 dark:border-indigo-800">
                   Target Grade {currentQ.gradeLevel}
@@ -183,7 +345,7 @@ export function QuickAssessmentModal({ isOpen, onClose }: QuickAssessmentModalPr
                 </div>
               )}
             </div>
-          ) : isFinished ? (
+          ) : step === 'results' ? (
             /* Results Screen */
             <div className="py-6 text-center space-y-6">
               <div className="inline-flex p-4 bg-gradient-to-r from-amber-400 to-orange-500 text-white rounded-3xl shadow-lg">
@@ -195,7 +357,7 @@ export function QuickAssessmentModal({ isOpen, onClose }: QuickAssessmentModalPr
                   Quick Assessment Complete!
                 </h3>
                 <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
-                  You scored <strong className="text-indigo-600 dark:text-indigo-400">{score} out of 5</strong>
+                  Year {selectedYear} Student • Score: <strong className="text-indigo-600 dark:text-indigo-400">{score} out of 5</strong>
                 </p>
               </div>
 
@@ -213,19 +375,11 @@ export function QuickAssessmentModal({ isOpen, onClose }: QuickAssessmentModalPr
 
               <div className="flex items-center justify-center gap-3 pt-2">
                 <button
-                  onClick={() => {
-                    const qList = AdaptiveEngine.getQuickSnapshotQuestions(5);
-                    setQuestions(qList);
-                    setCurrentIndex(0);
-                    setSelectedOption(null);
-                    setIsAnswered(false);
-                    setUserAnswers([]);
-                    setIsFinished(false);
-                  }}
+                  onClick={() => setStep('setup')}
                   className="px-5 py-3 rounded-2xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 font-semibold text-sm hover:bg-slate-200 transition-all flex items-center gap-2"
                 >
                   <RefreshCw className="w-4 h-4" />
-                  Try Another 5 Questions
+                  Configure & Retake Test
                 </button>
                 <button
                   onClick={onClose}
@@ -240,7 +394,7 @@ export function QuickAssessmentModal({ isOpen, onClose }: QuickAssessmentModalPr
         </div>
 
         {/* Footer Actions */}
-        {!isFinished && (
+        {step === 'test' && (
           <div className="p-4 bg-slate-50 dark:bg-slate-900/90 border-t border-slate-200 dark:border-slate-800 flex items-center justify-between shrink-0">
             <span className="text-xs text-slate-400 font-medium">
               {isAnswered ? 'Review answer before proceeding' : 'Select an answer to proceed'}
@@ -269,3 +423,4 @@ export function QuickAssessmentModal({ isOpen, onClose }: QuickAssessmentModalPr
     </div>
   );
 }
+
