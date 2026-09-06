@@ -35,11 +35,15 @@ export class AIGenerator {
 
     if (geminiKey) {
       try {
-        const prompt = `Generate a unique, high-quality GCSE exam question for:
+        const modelName = targetGrade >= 8 ? 'gemini-1.5-pro' : 'gemini-1.5-flash';
+
+        const prompt = `Generate a unique, high-quality, authentic GCSE exam question for:
 Subject: ${topic.subjectId} (${topic.topicName})
 Unit: ${topic.unitName}
 Target Grade Level: Grade ${targetGrade}
 Exam Board: ${examBoard}
+${detectedKnowledgeGap ? `Target Subtopic / Gap: ${detectedKnowledgeGap}` : ''}
+
 Format requirement: Respond ONLY with a valid raw JSON object (no markdown quotes, no triple backticks) with keys:
 - questionText: string (using LaTeX like $x^2$)
 - options: array of 4 distinct strings (using LaTeX)
@@ -49,8 +53,6 @@ Format requirement: Respond ONLY with a valid raw JSON object (no markdown quote
 - keyConcept: string
 - commonMistakes: array of strings
 - examTip: string`;
-
-        const modelName = targetGrade >= 8 ? 'gemini-2.5-pro' : 'gemini-2.5-flash';
 
         const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${geminiKey}`, {
           method: 'POST',
