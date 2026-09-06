@@ -27,22 +27,24 @@ export default function DiagnosticPage() {
     const yearGradeMap: Record<number, number> = { 8: 4, 9: 5, 10: 6, 11: 8 };
     const targetGrade = yearGradeMap[selectedYear] || 6;
 
+    const answeredIds = UserStore.getAnsweredQuestionIds();
     let qList: SeedQuestion[] = [];
+    const usedIds: string[] = [...answeredIds];
 
     if (mode === 'specific') {
       // Diagnostic specifically for chosen topic across difficulty levels
       for (let g = targetGrade - 1; g <= targetGrade + 2; g++) {
         const gradeLevel = Math.min(9, Math.max(4, g));
-        const q = AdaptiveEngine.getAdaptiveQuestionForTopic(selectedTopicId, gradeLevel);
+        const q = AdaptiveEngine.getAdaptiveQuestionForTopic(selectedTopicId, gradeLevel, usedIds);
+        usedIds.push(q.id);
         qList.push({
           ...q,
-          id: `diag-${selectedTopicId}-${gradeLevel}-${Date.now()}`,
           gradeLevel,
         });
       }
     } else {
       // Full Diagnostic across all subjects/topics tailored for Year Group
-      qList = INITIAL_SEED_QUESTIONS.map((q) => ({
+      qList = AdaptiveEngine.getQuickSnapshotQuestions(8).map((q) => ({
         ...q,
         gradeLevel: Math.min(9, Math.max(4, q.gradeLevel)),
       }));
@@ -64,8 +66,8 @@ export default function DiagnosticPage() {
     const newAttempts = [...attempts, { questionGrade: currentQuestion.gradeLevel, isCorrect, topicId: currentQuestion.topicId }];
     setAttempts(newAttempts);
 
-    // Track daily question attempt in UserStore
-    UserStore.recordQuestionAttempt(isCorrect);
+    // Track daily question attempt in UserStore and mark question as answered
+    UserStore.recordQuestionAttempt(isCorrect, currentQuestion.id);
     UserStore.updateTopicMastery(currentQuestion.topicId, isCorrect, currentQuestion.gradeLevel);
 
     if (currentIndex + 1 < questions.length) {

@@ -43,6 +43,8 @@ function PracticeContent() {
   const [totalAttempts, setTotalAttempts] = useState<number>(0);
   const [loadingNewQuestion, setLoadingNewQuestion] = useState<boolean>(false);
 
+  const [askedIds, setAskedIds] = useState<string[]>([]);
+
   // Load adaptive question when activeTopicId or params change
   useEffect(() => {
     const targetId = topicParam || initialTopicId;
@@ -52,8 +54,12 @@ function PracticeContent() {
     const topicRecord = masteries[targetId];
     const currentGrade = topicRecord?.currentGradeLevel || 4;
 
-    const q = AdaptiveEngine.getAdaptiveQuestionForTopic(targetId, currentGrade);
+    const answeredIds = UserStore.getAnsweredQuestionIds();
+    const excludeList = Array.from(new Set([...askedIds, ...answeredIds]));
+
+    const q = AdaptiveEngine.getAdaptiveQuestionForTopic(targetId, currentGrade, excludeList);
     setCurrentQuestion(q);
+    setAskedIds(prev => [...prev, q.id]);
     setSelectedOption(null);
     setHasSubmitted(false);
   }, [subjectParam, topicParam, searchQueryParam]);
@@ -72,7 +78,7 @@ function PracticeContent() {
     }
 
     // Record attempt in UserStore and update Adaptive Mastery!
-    UserStore.recordQuestionAttempt(correct);
+    UserStore.recordQuestionAttempt(correct, currentQuestion.id);
     UserStore.updateTopicMastery(activeTopicId, correct, currentQuestion.gradeLevel);
   };
 
@@ -92,8 +98,12 @@ function PracticeContent() {
     const topicRecord = masteries[activeTopicId];
     const nextGrade = topicRecord?.currentGradeLevel || 4;
 
-    // Load next adaptive question for topic
-    const nextQ = AdaptiveEngine.getAdaptiveQuestionForTopic(activeTopicId, nextGrade);
+    const answeredIds = UserStore.getAnsweredQuestionIds();
+    const excludeList = Array.from(new Set([...askedIds, ...answeredIds, currentQuestion.id]));
+
+    // Load next adaptive question for topic ensuring anti-repetition & option shuffling
+    const nextQ = AdaptiveEngine.getAdaptiveQuestionForTopic(activeTopicId, nextGrade, excludeList);
+    setAskedIds(prev => [...prev, nextQ.id]);
     setCurrentQuestion(nextQ);
     setLoadingNewQuestion(false);
   };

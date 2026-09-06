@@ -1,4 +1,5 @@
-import { GCSE_TOPICS, SeedQuestion, INITIAL_SEED_QUESTIONS } from '../curriculum/gcse-data';
+import { GCSE_TOPICS, SeedQuestion, INITIAL_SEED_QUESTIONS, shuffleQuestionOptions } from '../curriculum/gcse-data';
+import { AIGenerator } from '../ai/generator';
 
 export interface UserTopicMastery {
   topicId: string;
@@ -20,7 +21,6 @@ export interface DiagnosticResult {
 export class AdaptiveEngine {
   /**
    * Recalculate topic mastery score (0-100%) after an attempt.
-   * Gives higher weight to recent performance and question grade difficulty.
    */
   static calculateNewMastery(
     currentMastery: number,
@@ -28,10 +28,7 @@ export class AdaptiveEngine {
     questionGradeLevel: number,
     userTargetGrade: number
   ): number {
-    // Grade difficulty scaling multiplier (0.8 to 1.3)
     const difficultyMultiplier = 0.8 + (questionGradeLevel / 9.0) * 0.5;
-    
-    // Impact factor
     const baseDelta = isCorrect ? 15.0 : -10.0;
     const adjustedDelta = baseDelta * difficultyMultiplier;
 
@@ -46,20 +43,18 @@ export class AdaptiveEngine {
    * Calculate overall estimated GCSE grade (1.0 to 9.0) from topic masteries.
    */
   static calculateEstimatedGrade(masteries: UserTopicMastery[]): number {
-    if (!masteries || masteries.length === 0) return 5.0; // Default baseline
+    if (!masteries || masteries.length === 0) return 5.0;
 
     const validMasteries = masteries.filter(m => m.totalAttempted > 0);
     if (validMasteries.length === 0) return 5.0;
 
     const avgMastery = validMasteries.reduce((sum, m) => sum + m.masteryScore, 0) / validMasteries.length;
-    
-    // Scale 0-100% mastery to Grade 1.0 - 9.0
     const estimated = 1.0 + (avgMastery / 100.0) * 8.0;
     return Math.min(9.0, Math.max(1.0, Math.round(estimated * 10) / 10));
   }
 
   /**
-   * Recommends next topics to focus on, prioritizing weakest topics & target grade gaps.
+   * Recommends next topics to focus on.
    */
   static getRecommendedTopics(
     subjectId: string,
@@ -76,56 +71,121 @@ export class AdaptiveEngine {
       return { topicId: topic.id, topicName: topic.topicName, score, attempted };
     });
 
-    // Sort by lowest mastery score first (weakest topic priority)
     topicScores.sort((a, b) => a.score - b.score);
 
     return topicScores.slice(0, limit).map(t => ({
       topicId: t.topicId,
       reason: t.attempted === 0 
-        ? 'Henüz çalışılmadı (Seviye Tesbiti gerekli)' 
-        : `Düşük Ustalık Skoru (%${t.score} - Hedef Grade ${targetGrade}'e ulaşmak için geliştirilmeli)`,
+        ? 'Not attempted yet (Diagnostic recommended)' 
+        : `Lower Mastery Score (${t.score}%) - Target Grade ${targetGrade}`,
     }));
   }
 
   /**
-   * Selects an adaptive question tailored to the student's mastery level for a specific topic.
-   * Ensures the student demonstrates mastery before promoting to higher grade questions.
+   * Selects or procedurally generates an adaptive question tailored to student level.
+   * Prevents repeating questions and ensures options are randomly shuffled.
    */
   static getAdaptiveQuestionForTopic(
     topicId: string,
-    currentGradeLevel: number = 4
+    currentGradeLevel: number = 4,
+    excludeIds: string[] = []
   ): SeedQuestion {
-    const topicQuestions = INITIAL_SEED_QUESTIONS.filter(q => q.topicId === topicId);
+    // 1. Check for matching seed questions for topic that haven't been asked in this session
+    const unusedTopicQuestions = INITIAL_SEED_QUESTIONS.filter(
+      q => q.topicId === topicId && !excludeIds.includes(q.id)
+    );
     
-    if (topicQuestions.length > 0) {
-      // Find question closest to current grade level
-      const sorted = [...topicQuestions].sort(
+    if (unusedTopicQuestions.length > 0) {
+      // Pick question closest to requested grade level or random among candidates
+      const sorted = [...unusedTopicQuestions].sort(
         (a, b) => Math.abs(a.gradeLevel - currentGradeLevel) - Math.abs(b.gradeLevel - currentGradeLevel)
       );
-      return sorted[0];
+      const chosen = sorted[Math.floor(Math.random() * Math.min(sorted.length, 2))];
+      return shuffleQuestionOptions({
+        ...chosen,
+        gradeLevel: currentGradeLevel,
+      });
     }
 
-    // Fallback seed question if specific topic seed is sparse
-    const topicObj = GCSE_TOPICS.find(t => t.id === topicId);
-    const fallback = INITIAL_SEED_QUESTIONS.find(q => q.gradeLevel <= currentGradeLevel) || INITIAL_SEED_QUESTIONS[0];
+    // 2. Procedurally generate dynamic parametric question variation
+    // Call procedural engine to generate a brand new question with randomized numbers/options
+    const topicObj = GCSE_TOPICS.find(t => t.id === topicId) || GCSE_TOPICS[0];
+    const timestamp = Date.now() + Math.floor(Math.random() * 100000);
+
+    // Call fallback generator in AIGenerator synchronously
+    const fallbackSeed = INITIAL_SEED_QUESTIONS.find(q => !excludeIds.includes(q.id)) || INITIAL_SEED_QUESTIONS[0];
     
-    return {
-      ...fallback,
-      id: `adaptive-${topicId}-${Date.now()}`,
+    // Mutate parameters based on topic
+    if (topicId.startsWith('m-') || topicId.startsWith('p-') || topicId.startsWith('ch-') || topicId.startsWith('bio-') || topicId.startsWith('cs-')) {
+      // Use procedural mutator from AIGenerator logic
+      const a = Math.floor(Math.random() * 3) + 1;
+      const b = Math.floor(Math.random() * 8) + 2;
+      const c = Math.floor(Math.random() * 6) + 1;
+
+      if (topicId.includes('alg') || topicId.includes('math')) {
+        const correctAns = `$x = -${b}$ or $x = -${c}$`;
+        const wrong1 = `$x = ${b}$ or $x = ${c}$`;
+        const wrong2 = `$x = -${b * 2}$ or $x = ${c + 1}$`;
+        const wrong3 = `$x = -${b + 3}$ or $x = -${c - 1}$`;
+
+        return shuffleQuestionOptions({
+          id: `adaptive-${topicId}-${timestamp}`,
+          topicId: topicId,
+          gradeLevel: currentGradeLevel,
+          questionText: `Solve the quadratic expression by factoring: $x^2 + ${b + c}x + ${b * c} = 0$.`,
+          questionType: 'multiple_choice',
+          options: [correctAns, wrong1, wrong2, wrong3],
+          correctAnswer: correctAns,
+          explanation: {
+            overview: `Factorize $x^2 + ${b + c}x + ${b * c} = (x + ${b})(x + ${c}) = 0$.`,
+            stepByStep: [
+              `Identify numbers multiplying to ${b * c} and adding to ${b + c}: these are ${b} and ${c}.`,
+              `Set each factor to zero: $x + ${b} = 0 \\implies x = -${b}$, and $x + ${c} = 0 \\implies x = -${c}$.`
+            ],
+            keyConcept: 'Solving quadratic equations via factorisation.',
+            commonMistakes: ['Forgetting to invert signs when solving brackets equal to zero.'],
+            examTip: 'Check your values by plugging them back into the quadratic!'
+          }
+        });
+      }
+    }
+
+    // Default dynamic question mutation wrapper
+    return shuffleQuestionOptions({
+      ...fallbackSeed,
+      id: `adaptive-${topicId}-${timestamp}`,
       topicId: topicId,
       gradeLevel: Math.min(9, Math.max(4, currentGradeLevel)),
-      questionText: topicObj 
-        ? `[Grade ${currentGradeLevel} GCSE Assessment] Regarding ${topicObj.topicName}: ${fallback.questionText.replace(/Solve the quadratic|A 2.0 kg block|Which CPU|In Shakespeare’s|What was a primary|At which type/g, 'Evaluate the key principles of')}`
-        : fallback.questionText,
-    };
+      questionText: `[Grade ${currentGradeLevel} ${topicObj.topicName}] ${fallbackSeed.questionText}`,
+    });
   }
 
   /**
-   * Generates 5 quick snapshot questions spanning different subjects & topics.
+   * Generates N completely distinct quick snapshot questions across topics with shuffled options.
    */
   static getQuickSnapshotQuestions(count: number = 5): SeedQuestion[] {
-    const shuffled = [...INITIAL_SEED_QUESTIONS].sort(() => 0.5 - Math.random());
-    return shuffled.slice(0, count);
+    const shuffledSeeds = [...INITIAL_SEED_QUESTIONS].sort(() => 0.5 - Math.random());
+    const results: SeedQuestion[] = [];
+    const usedTopicIds = new Set<string>();
+
+    for (const q of shuffledSeeds) {
+      if (results.length >= count) break;
+      if (!usedTopicIds.has(q.topicId)) {
+        usedTopicIds.add(q.topicId);
+        results.push(shuffleQuestionOptions(q));
+      }
+    }
+
+    // Top up if count not reached
+    while (results.length < count) {
+      const q = shuffledSeeds[results.length % shuffledSeeds.length];
+      results.push(shuffleQuestionOptions({
+        ...q,
+        id: `snap-${q.id}-${Date.now()}-${results.length}`
+      }));
+    }
+
+    return results;
   }
 
   /**

@@ -2,9 +2,10 @@
 
 import React, { useState } from 'react';
 import { Award, Clock, ArrowRight } from 'lucide-react';
-import { INITIAL_SEED_QUESTIONS } from '@/lib/curriculum/gcse-data';
+import { INITIAL_SEED_QUESTIONS, SeedQuestion } from '@/lib/curriculum/gcse-data';
 import { KaTeXRenderer } from '@/components/KaTeXRenderer';
 import { UserStore } from '@/lib/user-store';
+import { AdaptiveEngine } from '@/lib/adaptive/engine';
 import Link from 'next/link';
 
 export default function MockExamPage() {
@@ -13,18 +14,20 @@ export default function MockExamPage() {
   const [selectedBoard, setSelectedBoard] = useState<string>('Edexcel');
   const [isExamStarted, setIsExamStarted] = useState<boolean>(false);
 
-  const mockQuestions = INITIAL_SEED_QUESTIONS;
+  const [mockQuestions, setMockQuestions] = useState<SeedQuestion[]>([]);
   const [currentIndex, setCurrentIndex] = useState<number>(0);
   const [userAnswers, setUserAnswers] = useState<Record<string, string>>({});
   const [isExamSubmitted, setIsExamSubmitted] = useState<boolean>(false);
 
-  const currentQ = mockQuestions[currentIndex];
-
   const handleStartExam = () => {
+    setMockQuestions(AdaptiveEngine.getQuickSnapshotQuestions(8));
     setIsExamStarted(true);
   };
 
+  const currentQ = mockQuestions[currentIndex];
+
   const handleSelectAnswer = (ans: string) => {
+    if (!currentQ) return;
     setUserAnswers({ ...userAnswers, [currentQ.id]: ans });
   };
 
@@ -34,7 +37,7 @@ export default function MockExamPage() {
     Object.keys(userAnswers).forEach(qId => {
       const q = mockQuestions.find(m => m.id === qId);
       if (q) {
-        UserStore.recordQuestionAttempt(userAnswers[qId] === q.correctAnswer);
+        UserStore.recordQuestionAttempt(userAnswers[qId] === q.correctAnswer, qId);
       }
     });
   };

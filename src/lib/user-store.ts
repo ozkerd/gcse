@@ -36,6 +36,7 @@ export interface TopicMasteryRecord {
 const SESSION_COOKIE_KEY = 'gcse_user_session';
 const STATS_COOKIE_KEY = 'gcse_daily_stats';
 const MASTERY_COOKIE_KEY = 'gcse_topic_masteries';
+const ANSWERED_QUESTIONS_KEY = 'gcse_answered_questions';
 
 const getTodayString = () => new Date().toISOString().split('T')[0];
 
@@ -134,7 +135,10 @@ export class UserStore {
     }
   }
 
-  static recordQuestionAttempt(isCorrect: boolean): DailyStats {
+  static recordQuestionAttempt(isCorrect: boolean, questionId?: string): DailyStats {
+    if (questionId) {
+      UserStore.markQuestionAnswered(questionId);
+    }
     const current = UserStore.getDailyStats();
     const today = getTodayString();
     const yesterday = getYesterdayString();
@@ -246,6 +250,28 @@ export class UserStore {
     }
 
     return updated;
+  }
+
+  static getAnsweredQuestionIds(): string[] {
+    const raw = getCookie(ANSWERED_QUESTIONS_KEY);
+    if (raw) {
+      try {
+        return JSON.parse(raw);
+      } catch (e) {
+        // ignore
+      }
+    }
+    return [];
+  }
+
+  static markQuestionAnswered(questionId: string) {
+    if (!questionId) return;
+    const current = UserStore.getAnsweredQuestionIds();
+    if (!current.includes(questionId)) {
+      const updated = [...current, questionId];
+      if (updated.length > 200) updated.shift();
+      setCookie(ANSWERED_QUESTIONS_KEY, JSON.stringify(updated));
+    }
   }
 
   static setTargetGrade(targetGrade: number) {

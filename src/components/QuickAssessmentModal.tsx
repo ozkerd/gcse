@@ -46,20 +46,22 @@ export function QuickAssessmentModal({ isOpen, onClose }: QuickAssessmentModalPr
     const yearGradeMap: Record<number, number> = { 8: 4, 9: 5, 10: 6, 11: 8 };
     const targetGrade = yearGradeMap[selectedYear] || 6;
 
+    const answeredIds = UserStore.getAnsweredQuestionIds();
     let qList: SeedQuestion[] = [];
+    const usedIds: string[] = [...answeredIds];
 
     if (mode === 'specific') {
-      // Pull or adapt questions specifically for the selected topic
+      // Pull unique adapted questions specifically for the selected topic
       for (let i = 0; i < 5; i++) {
-        const q = AdaptiveEngine.getAdaptiveQuestionForTopic(selectedTopicId, targetGrade);
+        const q = AdaptiveEngine.getAdaptiveQuestionForTopic(selectedTopicId, targetGrade, usedIds);
+        usedIds.push(q.id);
         qList.push({
           ...q,
-          id: `quick-${selectedTopicId}-${i}-${Date.now()}`,
           gradeLevel: targetGrade,
         });
       }
     } else {
-      // Random questions across all topics filtered for Year Group grade level
+      // Random snapshot questions across all topics
       qList = AdaptiveEngine.getQuickSnapshotQuestions(5).map((q) => ({
         ...q,
         gradeLevel: targetGrade,
@@ -85,7 +87,7 @@ export function QuickAssessmentModal({ isOpen, onClose }: QuickAssessmentModalPr
     setIsAnswered(true);
 
     // Record stats and topic mastery
-    UserStore.recordQuestionAttempt(isCorrect);
+    UserStore.recordQuestionAttempt(isCorrect, currentQ.id);
     UserStore.updateTopicMastery(currentQ.topicId, isCorrect, currentQ.gradeLevel);
 
     setUserAnswers((prev) => [...prev, { isCorrect, question: currentQ }]);

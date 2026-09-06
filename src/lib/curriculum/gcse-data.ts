@@ -800,6 +800,207 @@ export const INITIAL_SEED_QUESTIONS: SeedQuestion[] = [
       commonMistakes: ['Simply taking the mean (63 + 65)/2 = 64 without weighting by abundance.'],
       examTip: 'Check your final answer lies between the lowest and highest isotopic masses!'
     }
+  },
+  {
+    id: 'sq-m-indices-g5',
+    topicId: 'm-alg-2',
+    gradeLevel: 5,
+    questionText: 'Simplify the expression $3x^4 \\times 5x^7$.',
+    questionType: 'multiple_choice',
+    options: [
+      '$15x^{11}$',
+      '$15x^{28}$',
+      '$8x^{11}$',
+      '$8x^{28}$'
+    ],
+    correctAnswer: '$15x^{11}$',
+    explanation: {
+      overview: 'When multiplying terms with indices: multiply coefficients ($3 \\times 5$) and add exponents ($4 + 7$).',
+      stepByStep: [
+        'Multiply coefficients: $3 \\times 5 = 15$.',
+        'Apply first law of indices ($a^m \\times a^n = a^{m+n}$): $x^4 \\times x^7 = x^{4+7} = x^{11}$.',
+        'Combine: $15x^{11}$.'
+      ],
+      keyConcept: 'First index law: $a^m \\times a^n = a^{m+n}$. Coefficients multiply normally.',
+      commonMistakes: ['Multiplying the powers ($4 \\times 7 = 28$) instead of adding them.'],
+      examTip: 'Remember: multiply base numbers, add powers!'
+    }
+  },
+  {
+    id: 'sq-m-surds-g8',
+    topicId: 'm-alg-3',
+    gradeLevel: 8,
+    questionText: 'Expand and simplify $(\\sqrt{5} + 3)(\\sqrt{5} - 2)$.',
+    questionType: 'multiple_choice',
+    options: [
+      '$\\sqrt{5} - 1$',
+      '$11 + \\sqrt{5}$',
+      '$\\sqrt{5} + 5$',
+      '$5 + 3\\sqrt{5}$'
+    ],
+    correctAnswer: '$\\sqrt{5} - 1$',
+    explanation: {
+      overview: 'Use FOIL to expand: $(\\sqrt{5} \\times \\sqrt{5}) - 2\\sqrt{5} + 3\\sqrt{5} - 6$.',
+      stepByStep: [
+        'First: $\\sqrt{5} \\times \\sqrt{5} = 5$.',
+        'Outer: $\\sqrt{5} \\times (-2) = -2\\sqrt{5}$.',
+        'Inner: $3 \\times \\sqrt{5} = 3\\sqrt{5}$.',
+        'Last: $3 \\times (-2) = -6$.',
+        'Combine integers: $5 - 6 = -1$.',
+        'Combine surds: $-2\\sqrt{5} + 3\\sqrt{5} = \\sqrt{5}$.',
+        'Final result: $\\sqrt{5} - 1$.'
+      ],
+      keyConcept: '$\\sqrt{a} \\times \\sqrt{a} = a$. Collect like surd terms together.',
+      commonMistakes: ['Thinking $\\sqrt{5} \\times \\sqrt{5} = 25$ instead of $5$.'],
+      examTip: 'Write out each FOIL term separately to avoid sign errors.'
+    }
+  },
+  {
+    id: 'sq-m-vec-g8',
+    topicId: 'm-geo-2',
+    gradeLevel: 8,
+    questionText: 'Vector $\\mathbf{a} = \\begin{pmatrix} 4 \\\\ -3 \\end{pmatrix}$ and vector $\\mathbf{b} = \\begin{pmatrix} -2 \\\\ 5 \\end{pmatrix}$. Calculate $3\\mathbf{a} - 2\\mathbf{b}$.',
+    questionType: 'multiple_choice',
+    options: [
+      '$\\begin{pmatrix} 16 \\\\ -19 \\end{pmatrix}$',
+      '$\\begin{pmatrix} 8 \\\\ 1 \\end{pmatrix}$',
+      '$\\begin{pmatrix} 16 \\\\ 1 \\end{pmatrix}$',
+      '$\\begin{pmatrix} 6 \\\\ -19 \\end{pmatrix}$'
+    ],
+    correctAnswer: '$\\begin{pmatrix} 16 \\\\ -19 \\end{pmatrix}$',
+    explanation: {
+      overview: 'Multiply vector components by scalars and subtract top and bottom values.',
+      stepByStep: [
+        '$3\\mathbf{a} = 3 \\begin{pmatrix} 4 \\\\ -3 \\end{pmatrix} = \\begin{pmatrix} 12 \\\\ -9 \\end{pmatrix}$.',
+        '$2\\mathbf{b} = 2 \\begin{pmatrix} -2 \\\\ 5 \\end{pmatrix} = \\begin{pmatrix} -4 \\\\ 10 \\end{pmatrix}$.',
+        'Subtract x-components: $12 - (-4) = 16$.',
+        'Subtract y-components: $-9 - 10 = -19$.',
+        'Result: $\\begin{pmatrix} 16 \\\\ -19 \\end{pmatrix}$.'
+      ],
+      keyConcept: 'Scalar multiplication scales x and y components. Double negatives become addition.',
+      commonMistakes: ['Subtracting $12 - 4 = 8$ instead of $12 - (-4) = 16$.'],
+      examTip: 'Watch minus signs carefully in vector arithmetic!'
+    }
+  },
+  {
+    id: 'sq-p-elec-g5',
+    topicId: 'p-eng-2',
+    gradeLevel: 5,
+    questionText: 'A resistor in a circuit has a potential difference of $12\\text{ V}$ across it and a current of $0.5\\text{ A}$ flowing through it. Calculate the resistance $R$.',
+    questionType: 'multiple_choice',
+    options: [
+      '$24\\text{ }\\Omega$',
+      '$6\\text{ }\\Omega$',
+      '$0.0417\\text{ }\\Omega$',
+      '$14.4\\text{ }\\Omega$'
+    ],
+    correctAnswer: '$24\\text{ }\\Omega$',
+    explanation: {
+      overview: 'Use Ohm’s Law equation: $V = I \\times R$, so $R = \\frac{V}{I}$.',
+      stepByStep: [
+        'Identify values: $V = 12\\text{ V}$, $I = 0.5\\text{ A}$.',
+        'Rearrange for $R$: $R = V / I$.',
+        'Substitute values: $R = 12 / 0.5 = 24\\text{ }\\Omega$.'
+      ],
+      keyConcept: 'Dividing by $0.5$ is equivalent to multiplying by $2$.',
+      commonMistakes: ['Multiplying $12 \\times 0.5 = 6$ instead of dividing.'],
+      examTip: 'Units for resistance are Ohms ($\\Omega$).'
+    }
+  },
+  {
+    id: 'sq-cs-bin-g5',
+    topicId: 'cs-sys-2',
+    gradeLevel: 5,
+    questionText: 'Convert the 8-bit unsigned binary number $10110101_2$ into denary (decimal).',
+    questionType: 'multiple_choice',
+    options: [
+      '$181$',
+      '$173$',
+      '$165$',
+      '$197$'
+    ],
+    correctAnswer: '$181$',
+    explanation: {
+      overview: 'Sum place values ($128, 64, 32, 16, 8, 4, 2, 1$) corresponding to binary 1s.',
+      stepByStep: [
+        'Place values: $128(1) + 64(0) + 32(1) + 16(1) + 8(0) + 4(1) + 2(0) + 1(1)$.',
+        'Add active bits: $128 + 32 + 16 + 4 + 1 = 181$.'
+      ],
+      keyConcept: 'Each bit represents powers of 2 from right ($2^0$) to left ($2^7$).',
+      commonMistakes: ['Starting place values from 0 instead of 1 at the rightmost bit.'],
+      examTip: 'Write place values $128, 64, 32, 16, 8, 4, 2, 1$ above the binary bits!'
+    }
+  },
+  {
+    id: 'sq-eng-aic-g7',
+    topicId: 'eng-lit-2',
+    gradeLevel: 7,
+    questionText: 'In J.B. Priestley’s *An Inspector Calls*, how does Mr. Arthur Birling embody capitalist arrogance in Act 1?',
+    questionType: 'multiple_choice',
+    options: [
+      'By declaring the Titanic "unsinkable, absolutely unsinkable" and dismissing war risks',
+      'By expressing regret for firing Eva Smith from his factory',
+      'By supporting the trade union movement and higher wages',
+      'By welcoming Inspector Goole as an esteemed old friend'
+    ],
+    correctAnswer: 'By declaring the Titanic "unsinkable, absolutely unsinkable" and dismissing war risks',
+    explanation: {
+      overview: 'Priestley uses dramatic irony in Birling’s foolish speeches to critique capitalism and upper-class complacency.',
+      stepByStep: [
+        'Recognize dramatic irony: the 1945 audience knows the Titanic sank in 1912 and WWI occurred.',
+        'Birling’s confident mistakes make his capitalist worldview look short-sighted and foolish.',
+        'Priestley promotes socialism by discrediting Birling’s individualism.'
+      ],
+      keyConcept: 'Dramatic irony undermines Mr. Birling’s authority before Inspector Goole arrives.',
+      commonMistakes: ['Confusing Arthur Birling’s views with Sheila or Eric’s views.'],
+      examTip: 'Always link character quotes to Priestley’s political intentions in post-WWII Britain!'
+    }
+  },
+  {
+    id: 'sq-hist-coldwar-g8',
+    topicId: 'hist-2',
+    gradeLevel: 8,
+    questionText: 'What was a direct outcome of the 1962 Cuban Missile Crisis between the USA and USSR?',
+    questionType: 'multiple_choice',
+    options: [
+      'Establishment of the Washington-Moscow Direct Communications Hotline and Partial Test Ban Treaty',
+      'The immediate construction of the Berlin Wall in 1962',
+      'The invasion of South Vietnam by Soviet military forces',
+      'The permanent withdrawal of the US from NATO'
+    ],
+    correctAnswer: 'Establishment of the Washington-Moscow Direct Communications Hotline and Partial Test Ban Treaty',
+    explanation: {
+      overview: 'The near-nuclear war prompted Kennedy and Khrushchev to improve direct communication and limit nuclear testing.',
+      stepByStep: [
+        'Crisis ended with USSR removing Cuban missiles and US secretly removing Jupiter missiles from Turkey.',
+        'To prevent future accidental war, a direct "Hotline" telephone link was created in 1963.',
+        'In Aug 1963, both superpowers signed the Partial Test Ban Treaty.'
+      ],
+      keyConcept: 'Détente efforts emerged from the shock of coming close to nuclear destruction.',
+      commonMistakes: ['Thinking the Berlin Wall was built after Cuba (it was built in 1961).'],
+      examTip: 'Structure 8-mark consequences questions into short-term vs long-term impacts.'
+    }
   }
 ];
+
+/**
+ * Shuffles question options randomly so the correct answer is NOT always option A.
+ */
+export function shuffleQuestionOptions(q: SeedQuestion): SeedQuestion {
+  if (!q.options || q.options.length === 0) return q;
+
+  const shuffled = [...q.options];
+  for (let i = shuffled.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    const temp = shuffled[i];
+    shuffled[i] = shuffled[j];
+    shuffled[j] = temp;
+  }
+
+  return {
+    ...q,
+    options: shuffled,
+  };
+}
+
 
