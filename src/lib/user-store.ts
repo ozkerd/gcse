@@ -9,7 +9,10 @@ export interface UserSession {
   name: string;
   email: string;
   studentName?: string;
+  parentEmail?: string;
   targetGrade: number;
+  emailReminders?: boolean;
+  parentProgressReports?: boolean;
 }
 
 export interface DailyStats {
@@ -27,6 +30,7 @@ export interface TopicMasteryRecord {
   totalAttempted: number;
   totalCorrect: number;
   currentGradeLevel: number; // 4 to 9
+  isMastered?: boolean; // 100% Mastery Awarded
 }
 
 const SESSION_COOKIE_KEY = 'gcse_user_session';
@@ -69,6 +73,8 @@ export class UserStore {
       name: 'Guest Student',
       email: 'guest@primerllm.com',
       targetGrade: 9,
+      emailReminders: true,
+      parentProgressReports: true,
     };
   }
 
@@ -92,7 +98,6 @@ export class UserStore {
         } else {
           // New day check
           let newStreak = stats.streakDays;
-          // If last active date was not yesterday, reset streak to 0 until first question today
           if (stats.lastActiveDate !== yesterday && stats.lastActiveDate !== today) {
             newStreak = 0;
           }
@@ -112,7 +117,6 @@ export class UserStore {
       }
     }
 
-    // Brand new user defaults: 0 streak, 0 questions attempted
     const defaultStats: DailyStats = {
       date: today,
       questionsAttemptedToday: 0,
@@ -137,13 +141,11 @@ export class UserStore {
 
     let newStreak = current.streakDays;
     
-    // Calculate streak logic accurately:
     if (current.lastActiveDate === yesterday) {
       newStreak = current.streakDays + 1;
     } else if (current.lastActiveDate === today) {
       newStreak = current.streakDays > 0 ? current.streakDays : 1;
     } else {
-      // First active day after a gap
       newStreak = 1;
     }
 
@@ -180,6 +182,7 @@ export class UserStore {
       totalAttempted: 0,
       totalCorrect: 0,
       currentGradeLevel: 4, // Starts at Foundation Grade 4
+      isMastered: false,
     };
 
     const newAttempted = current.totalAttempted + 1;
@@ -190,8 +193,7 @@ export class UserStore {
     let newGradeLevel = current.currentGradeLevel;
 
     if (isCorrect) {
-      newMastery = Math.min(100, newMastery + 15 * (questionGrade / 9));
-      // Adaptive Promotion Rule: Must get at least 2 in a row correct to promote grade!
+      newMastery = Math.min(100, newMastery + 20 * (questionGrade / 9));
       if (newConsecutive >= 2 && newGradeLevel < 9) {
         if (newGradeLevel < 6) newGradeLevel = 6;
         else if (newConsecutive >= 3 && newGradeLevel < 8) newGradeLevel = 8;
@@ -199,11 +201,13 @@ export class UserStore {
       }
     } else {
       newMastery = Math.max(10, newMastery - 12);
-      // Demote grade if incorrect and struggling
       if (newConsecutive === 0 && newGradeLevel > 4) {
         newGradeLevel = Math.max(4, newGradeLevel - 1);
       }
     }
+
+    const wasMasteredBefore = current.isMastered || current.masteryScore >= 100;
+    const isNowMastered = newMastery >= 100;
 
     const updated: TopicMasteryRecord = {
       topicId,
@@ -212,12 +216,33 @@ export class UserStore {
       totalAttempted: newAttempted,
       totalCorrect: newCorrect,
       currentGradeLevel: newGradeLevel,
+      isMastered: isNowMastered,
     };
 
     masteries[topicId] = updated;
     setCookie(MASTERY_COOKIE_KEY, JSON.stringify(masteries));
     if (typeof window !== 'undefined') {
       window.dispatchEvent(new Event('gcse_masteries_updated'));
+
+      // If student reached 100% Mastery for the first time, trigger 100% Mastery Event & Email!
+      if (isNowMastered && !wasMasteredBefore) {
+        const detailObj = { topicId, gradeLevel: newGradeLevel, topicRecord: updated };
+        window.dispatchEvent(new CustomEvent('gcse_topic_mastered', { detail: detailObj }));
+
+        // Dispatch Email to Parent if configured
+        const session = UserStore.getSession();
+        const pEmail = session.parentEmail || (session.role === 'parent' ? session.email : null);
+        if (pEmail && session.parentProgressReports !== false) {
+          import('./email-service').then(({ EmailService }) => {
+            EmailService.sendParentMasteryNotification(
+              pEmail,
+              session.name || 'Student',
+              topicId,
+              newGradeLevel
+            );
+          });
+        }
+      }
     }
 
     return updated;
@@ -228,24 +253,40 @@ export class UserStore {
     UserStore.saveSession({ ...session, targetGrade });
   }
 
-  static loginAsStudent(name: string, email: string) {
+  static loginAsStudent(
+    name: string,
+    email: string,
+    emailReminders = true,
+    parentEmail = ''
+  ) {
     const session = UserStore.getSession();
     UserStore.saveSession({
       ...session,
       role: 'student',
       name: name || 'Student User',
       email: email || 'student@primerllm.com',
+      parentEmail: parentEmail || session.parentEmail,
+      emailReminders,
+      parentProgressReports: true,
     });
   }
 
-  static loginAsParent(parentName: string, parentEmail: string, studentName: string) {
+  static loginAsParent(
+    parentName: string,
+    parentEmail: string,
+    studentName: string,
+    parentProgressReports = true
+  ) {
     const session = UserStore.getSession();
     UserStore.saveSession({
       ...session,
       role: 'parent',
       name: parentName || 'Parent User',
       email: parentEmail || 'parent@primerllm.com',
+      parentEmail: parentEmail || 'parent@primerllm.com',
       studentName: studentName || 'Alex (Student)',
+      parentProgressReports,
+      emailReminders: true,
     });
   }
 
@@ -263,9 +304,8 @@ export class UserStore {
 
   static saveGeneratedQuestion(question: SeedQuestion) {
     const existing = UserStore.getStoredQuestions();
-    // Avoid duplicate IDs
     if (!existing.some(q => q.id === question.id)) {
-      const updated = [question, ...existing].slice(0, 100); // Keep top 100 recent AI generated questions
+      const updated = [question, ...existing].slice(0, 100);
       setCookie('gcse_stored_questions', JSON.stringify(updated));
     }
   }
@@ -276,6 +316,8 @@ export class UserStore {
       name: 'Guest Student',
       email: 'guest@primerllm.com',
       targetGrade: 9,
+      emailReminders: true,
+      parentProgressReports: true,
     });
   }
 }

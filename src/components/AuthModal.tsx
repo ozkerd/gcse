@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { X, User, Users, Shield, CheckCircle2 } from 'lucide-react';
+import { X, User, Users, Shield, CheckCircle2, Mail, Bell } from 'lucide-react';
 import { UserStore, UserSession } from '@/lib/user-store';
 
 interface AuthModalProps {
@@ -14,21 +14,25 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, currentSe
   const [activeTab, setActiveTab] = useState<'student' | 'parent'>('student');
   const [studentName, setStudentName] = useState(currentSession.role === 'student' ? currentSession.name : '');
   const [studentEmail, setStudentEmail] = useState(currentSession.role === 'student' ? currentSession.email : '');
+  const [studentParentEmail, setStudentParentEmail] = useState(currentSession.parentEmail || '');
+  const [studentReminders, setStudentReminders] = useState(currentSession.emailReminders !== false);
+
   const [parentName, setParentName] = useState(currentSession.role === 'parent' ? currentSession.name : '');
   const [parentEmail, setParentEmail] = useState(currentSession.role === 'parent' ? currentSession.email : '');
   const [childName, setChildName] = useState(currentSession.studentName || '');
+  const [parentReports, setParentReports] = useState(currentSession.parentProgressReports !== false);
 
   if (!isOpen) return null;
 
   const handleStudentLogin = (e: React.FormEvent) => {
     e.preventDefault();
-    UserStore.loginAsStudent(studentName, studentEmail);
+    UserStore.loginAsStudent(studentName, studentEmail, studentReminders, studentParentEmail);
     onClose();
   };
 
   const handleParentLogin = (e: React.FormEvent) => {
     e.preventDefault();
-    UserStore.loginAsParent(parentName, parentEmail, childName);
+    UserStore.loginAsParent(parentName, parentEmail, childName, parentReports);
     onClose();
   };
 
@@ -108,6 +112,32 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, currentSe
               />
             </div>
 
+            <div>
+              <label className="block text-xs font-bold text-slate-700 uppercase mb-1">Parent Email (Optional for Progress Reports)</label>
+              <input
+                type="email"
+                value={studentParentEmail}
+                onChange={(e) => setStudentParentEmail(e.target.value)}
+                placeholder="parent@example.com"
+                className="w-full p-3 rounded-xl border border-slate-200 text-sm focus:ring-2 focus:ring-indigo-500"
+              />
+            </div>
+
+            {/* Email Preferences Checkbox */}
+            <div className="p-3 bg-indigo-50/70 border border-indigo-100 rounded-xl space-y-2">
+              <label className="flex items-start gap-2.5 cursor-pointer text-xs text-indigo-950 font-semibold">
+                <input
+                  type="checkbox"
+                  checked={studentReminders}
+                  onChange={(e) => setStudentReminders(e.target.checked)}
+                  className="mt-0.5 rounded text-indigo-600 focus:ring-indigo-500 w-4 h-4"
+                />
+                <span>
+                  Receive daily revision reminders, streak alerts, and 100% topic mastery awards via email from <strong className="text-indigo-700">noreply@primerllm.com</strong>
+                </span>
+              </label>
+            </div>
+
             <button
               type="submit"
               className="w-full py-3 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-sm shadow-md shadow-indigo-500/20 transition-all"
@@ -156,6 +186,21 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, currentSe
               />
             </div>
 
+            {/* Parent Email Preferences Checkbox */}
+            <div className="p-3 bg-purple-50/70 border border-purple-100 rounded-xl space-y-2">
+              <label className="flex items-start gap-2.5 cursor-pointer text-xs text-purple-950 font-semibold">
+                <input
+                  type="checkbox"
+                  checked={parentReports}
+                  onChange={(e) => setParentReports(e.target.checked)}
+                  className="mt-0.5 rounded text-purple-600 focus:ring-purple-500 w-4 h-4"
+                />
+                <span>
+                  Receive weekly progress analysis, topic 100% mastery alerts, and achievements for my child from <strong className="text-purple-700">noreply@primerllm.com</strong>
+                </span>
+              </label>
+            </div>
+
             <button
               type="submit"
               className="w-full py-3 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-sm shadow-md shadow-indigo-500/20 transition-all"
@@ -180,3 +225,4 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, currentSe
     </div>
   );
 };
+
