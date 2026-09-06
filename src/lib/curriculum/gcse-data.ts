@@ -436,10 +436,109 @@ export const INITIAL_SEED_QUESTIONS: SeedQuestion[] = [
         'Friction creates deep ocean trenches and explosive composite volcanoes.'
       ],
       keyConcept: 'Subduction occurs at destructive plate boundaries where density differences force one plate beneath another.',
-      commonMistakes: [
-        'Thinking conservative margins create volcanoes (they only cause earthquakes due to lateral sliding).'
-      ],
+      commonMistakes: ['Thinking conservative margins create volcanoes (they only cause earthquakes).'],
       examTip: 'Use precise geological terms like "subduction zone", "trench", and "mantle convection" for top marks.'
+    },
+    markScheme: 'Use precise geological terms like subduction zone, trench, and mantle convection for top marks.'
+  },
+  {
+    id: 'sq-m-2-g4',
+    topicId: 'm-alg-1',
+    gradeLevel: 4,
+    questionText: 'Factorize the expression $x^2 + 5x + 6$.',
+    questionType: 'multiple_choice',
+    options: [
+      '$(x + 2)(x + 3)$',
+      '$(x + 1)(x + 6)$',
+      '$(x - 2)(x - 3)$',
+      '$(x + 5)(x + 1)$'
+    ],
+    correctAnswer: '$(x + 2)(x + 3)$',
+    explanation: {
+      overview: 'We need two numbers that add to 5 and multiply to 6. These are 2 and 3.',
+      stepByStep: [
+        'Find factors of 6: 1 x 6, 2 x 3.',
+        'Check sums: 1 + 6 = 7, 2 + 3 = 5.',
+        'Write in double brackets: $(x + 2)(x + 3)$.'
+      ],
+      keyConcept: 'Simple quadratics $x^2+bx+c$ factor into $(x+p)(x+q)$ where $p+q=b$ and $p \\times q=c$.',
+      commonMistakes: ['Confusing factors that add to c instead of multiplying to c.'],
+      examTip: 'Expand your brackets using FOIL to verify!'
+    }
+  },
+  {
+    id: 'sq-m-3-g9',
+    topicId: 'm-geo-1',
+    gradeLevel: 9,
+    questionText: 'In triangle ABC, side $a = 7\\text{ cm}$, side $b = 10\\text{ cm}$, and angle $C = 60^\\circ$. Calculate the exact length of side $c$.',
+    questionType: 'multiple_choice',
+    options: [
+      '$\\sqrt{79}\\text{ cm}$',
+      '$\\sqrt{149}\\text{ cm}$',
+      '$\\sqrt{51}\\text{ cm}$',
+      '$9.5\\text{ cm}$'
+    ],
+    correctAnswer: '$\\sqrt{79}\\text{ cm}$',
+    explanation: {
+      overview: 'Apply the Cosine Rule: $c^2 = a^2 + b^2 - 2ab\\cos(C)$.',
+      stepByStep: [
+        '$c^2 = 7^2 + 10^2 - 2(7)(10)\\cos(60^\\circ)$.',
+        '$c^2 = 49 + 100 - 140 \\times (0.5) = 149 - 70 = 79$.',
+        '$c = \\sqrt{79}\\text{ cm}$.'
+      ],
+      keyConcept: 'Cosine rule links 3 sides and 1 angle of any non-right triangle.',
+      commonMistakes: ['Forgetting that $\\cos(60^\\circ) = 0.5$.'],
+      examTip: 'Keep exact surd values unless asked to round to 3 sig figs.'
+    }
+  },
+  {
+    id: 'sq-bio-1-g5',
+    topicId: 'bio-cell-1',
+    gradeLevel: 5,
+    questionText: 'An image of a plant cell under a light microscope measures $30\\text{ mm}$ in width. If the actual width of the cell is $0.05\\text{ mm}$, what is the magnification?',
+    questionType: 'multiple_choice',
+    options: [
+      '$\\times 600$',
+      '$\\times 150$',
+      '$\\times 60$',
+      '$\\times 1,500$'
+    ],
+    correctAnswer: '$\\times 600$',
+    explanation: {
+      overview: 'Use the triangle formula: $\\text{Magnification} = \\frac{\\text{Image Size}}{\\text{Actual Size}}$.',
+      stepByStep: [
+        'Image size = $30\\text{ mm}$.',
+        'Actual size = $0.05\\text{ mm}$.',
+        'Magnification = $30 / 0.05 = 600$.'
+      ],
+      keyConcept: 'Always check that Image Size and Actual Size are in the same units before dividing!',
+      commonMistakes: ['Dividing Actual by Image instead of Image by Actual.'],
+      examTip: 'Remember the formula triangle I = A x M.'
+    }
+  },
+  {
+    id: 'sq-ch-1-g7',
+    topicId: 'ch-atom-1',
+    gradeLevel: 7,
+    questionText: 'A sample of copper contains $69\\%$ $^{63}\\text{Cu}$ and $31\\%$ $^{65}\\text{Cu}$. Calculate the relative atomic mass ($A_r$) of copper to 1 decimal place.',
+    questionType: 'multiple_choice',
+    options: [
+      '$63.6$',
+      '$64.0$',
+      '$63.5$',
+      '$64.2$'
+    ],
+    correctAnswer: '$63.6$',
+    explanation: {
+      overview: '$A_r = \\frac{\\sum (\\text{isotope mass} \\times \\text{abundance})}{100}$.',
+      stepByStep: [
+        '$(63 \\times 69) + (65 \\times 31) = 4347 + 2015 = 6362$.',
+        '$6362 / 100 = 63.62$.',
+        'To 1 decimal place = $63.6$.'
+      ],
+      keyConcept: 'Relative atomic mass is a weighted average of isotopic masses.',
+      commonMistakes: ['Simply taking the mean (63 + 65)/2 = 64 without weighting by abundance.'],
+      examTip: 'Check your final answer lies between the lowest and highest isotopic masses!'
     }
   }
 ];

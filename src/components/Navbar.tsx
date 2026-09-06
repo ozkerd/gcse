@@ -3,9 +3,10 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Brain, LayoutDashboard, Target, Calendar, BookOpen, Sparkles, Award, Users, FileText, UserCheck, LogIn } from 'lucide-react';
+import { Brain, LayoutDashboard, Target, Calendar, BookOpen, Sparkles, Award, Users, FileText, UserCheck, LogIn, Zap } from 'lucide-react';
 import { UserStore, UserSession } from '@/lib/user-store';
 import { AuthModal } from '@/components/AuthModal';
+import { QuickAssessmentModal } from '@/components/QuickAssessmentModal';
 
 export const Navbar = () => {
   const pathname = usePathname();
@@ -16,6 +17,7 @@ export const Navbar = () => {
     targetGrade: 9,
   });
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+  const [isQuickAssessmentOpen, setIsQuickAssessmentOpen] = useState(false);
 
   useEffect(() => {
     setSession(UserStore.getSession());
@@ -79,8 +81,17 @@ export const Navbar = () => {
             })}
           </nav>
 
-          {/* User Account & Target Grade Badge */}
-          <div className="flex items-center gap-3">
+          {/* User Account & Actions */}
+          <div className="flex items-center gap-2 sm:gap-3">
+            {/* Quick 5-Question Snapshot Launcher */}
+            <button
+              onClick={() => setIsQuickAssessmentOpen(true)}
+              className="flex items-center gap-1.5 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white px-3 py-1.5 rounded-xl text-xs font-bold transition-all shadow-md active:scale-95"
+            >
+              <Zap className="w-3.5 h-3.5 fill-white" />
+              <span>Quick 5 Test</span>
+            </button>
+
             {/* Target Grade Badge */}
             <div className="hidden sm:flex items-center gap-2 bg-gradient-to-r from-purple-50 to-indigo-50 border border-purple-200 px-3 py-1.5 rounded-full">
               <Award className="w-4 h-4 text-purple-600" />
@@ -118,7 +129,14 @@ export const Navbar = () => {
         onClose={() => setIsAuthModalOpen(false)}
         currentSession={session}
       />
+
+      {/* Quick 5-Question Assessment Modal */}
+      <QuickAssessmentModal
+        isOpen={isQuickAssessmentOpen}
+        onClose={() => setIsQuickAssessmentOpen(false)}
+      />
     </>
   );
 };
+
 

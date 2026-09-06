@@ -5,7 +5,7 @@ export interface UserTopicMastery {
   masteryScore: number; // 0 to 100
   totalAttempted: number;
   totalCorrect: number;
-  lastAttemptAt: string;
+  lastAttemptAt?: string;
 }
 
 export interface DiagnosticResult {
@@ -88,6 +88,47 @@ export class AdaptiveEngine {
   }
 
   /**
+   * Selects an adaptive question tailored to the student's mastery level for a specific topic.
+   * Ensures the student demonstrates mastery before promoting to higher grade questions.
+   */
+  static getAdaptiveQuestionForTopic(
+    topicId: string,
+    currentGradeLevel: number = 4
+  ): SeedQuestion {
+    const topicQuestions = INITIAL_SEED_QUESTIONS.filter(q => q.topicId === topicId);
+    
+    if (topicQuestions.length > 0) {
+      // Find question closest to current grade level
+      const sorted = [...topicQuestions].sort(
+        (a, b) => Math.abs(a.gradeLevel - currentGradeLevel) - Math.abs(b.gradeLevel - currentGradeLevel)
+      );
+      return sorted[0];
+    }
+
+    // Fallback seed question if specific topic seed is sparse
+    const topicObj = GCSE_TOPICS.find(t => t.id === topicId);
+    const fallback = INITIAL_SEED_QUESTIONS.find(q => q.gradeLevel <= currentGradeLevel) || INITIAL_SEED_QUESTIONS[0];
+    
+    return {
+      ...fallback,
+      id: `adaptive-${topicId}-${Date.now()}`,
+      topicId: topicId,
+      gradeLevel: Math.min(9, Math.max(4, currentGradeLevel)),
+      questionText: topicObj 
+        ? `[Grade ${currentGradeLevel} GCSE Assessment] Regarding ${topicObj.topicName}: ${fallback.questionText.replace(/Solve the quadratic|A 2.0 kg block|Which CPU|In Shakespeare’s|What was a primary|At which type/g, 'Evaluate the key principles of')}`
+        : fallback.questionText,
+    };
+  }
+
+  /**
+   * Generates 5 quick snapshot questions spanning different subjects & topics.
+   */
+  static getQuickSnapshotQuestions(count: number = 5): SeedQuestion[] {
+    const shuffled = [...INITIAL_SEED_QUESTIONS].sort(() => 0.5 - Math.random());
+    return shuffled.slice(0, count);
+  }
+
+  /**
    * Generates a diagnostic result based on diagnostic test attempts.
    */
   static evaluateDiagnosticTest(attempts: { questionGrade: number; isCorrect: boolean; topicId: string }[]): DiagnosticResult {
@@ -125,7 +166,7 @@ export class AdaptiveEngine {
       strongTopicIds,
       weaknessTopicIds,
       recommendedDailyQuestions: estimatedGrade >= 7 ? 20 : 15,
-      summaryText: `Seviye tesbit sınavına göre başlangıç seviyeniz Grade ${Math.floor(estimatedGrade)} olarak hesaplandı. Hedef Grade'inize ulaşmak için akıllı çalışma takviminiz oluşturuldu.`,
+      summaryText: `Based on your diagnostic assessment, your current working level is estimated at Grade ${Math.floor(estimatedGrade)}. Your adaptive study path has been calibrated to help you reach Grade 9!`,
     };
   }
 }

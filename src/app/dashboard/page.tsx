@@ -2,9 +2,11 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { Award, Sparkles, TrendingUp, Calendar, AlertCircle, ArrowRight, CheckCircle, RefreshCw } from 'lucide-react';
+import { Award, Sparkles, TrendingUp, Calendar, AlertCircle, ArrowRight, CheckCircle, RefreshCw, Zap } from 'lucide-react';
 import { AdaptiveEngine } from '@/lib/adaptive/engine';
 import { UserStore, UserSession, DailyStats } from '@/lib/user-store';
+import { SearchBar } from '@/components/SearchBar';
+import { QuickAssessmentModal } from '@/components/QuickAssessmentModal';
 
 export default function Dashboard() {
   const [session, setSession] = useState<UserSession>({
@@ -18,17 +20,25 @@ export default function Dashboard() {
     date: new Date().toISOString().split('T')[0],
     questionsAttemptedToday: 0,
     questionsCorrectToday: 0,
-    streakDays: 4,
+    streakDays: 0,
   });
 
   const [estimatedGrade, setEstimatedGrade] = useState<number>(6.5);
+  const [isQuickAssessmentOpen, setIsQuickAssessmentOpen] = useState(false);
 
   useEffect(() => {
     setSession(UserStore.getSession());
     setDailyStats(UserStore.getDailyStats());
 
     const handleUserUpdate = () => setSession(UserStore.getSession());
-    const handleStatsUpdate = () => setDailyStats(UserStore.getDailyStats());
+    const handleStatsUpdate = () => {
+      setDailyStats(UserStore.getDailyStats());
+      const masteries = Object.values(UserStore.getTopicMasteries());
+      if (masteries.length > 0) {
+        const est = AdaptiveEngine.calculateEstimatedGrade(masteries);
+        setEstimatedGrade(est);
+      }
+    };
 
     window.addEventListener('gcse_user_updated', handleUserUpdate);
     window.addEventListener('gcse_stats_updated', handleStatsUpdate);
@@ -58,32 +68,48 @@ export default function Dashboard() {
   return (
     <div className="space-y-8">
       
-      {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
-        <div>
-          <h1 className="text-2xl font-extrabold text-slate-900">Student Dashboard & Progress Tracker</h1>
-          <p className="text-slate-500 text-sm">
-            {session.role === 'guest'
-              ? 'Welcome! You are currently learning in Guest Mode. Progress is saved via cookies.'
-              : `Welcome back, ${session.name}! View daily goals and track your path to Grade ${session.targetGrade}.`}
-          </p>
+      {/* Header & Google Search */}
+      <div className="flex flex-col gap-6 bg-white p-6 sm:p-8 rounded-3xl border border-slate-200 shadow-sm">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div>
+            <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900">Student Dashboard & Progress</h1>
+            <p className="text-slate-500 text-sm mt-1">
+              {session.role === 'guest'
+                ? 'Learning in Guest Mode. Your progress is saved dynamically via cookies.'
+                : `Welcome back, ${session.name}! View daily goals and track your path to Grade ${session.targetGrade}.`}
+            </p>
+          </div>
+
+          {/* Target Grade Selector */}
+          <div className="flex items-center gap-4 bg-indigo-50/80 border border-indigo-100 p-3 rounded-2xl shrink-0">
+            <Award className="w-6 h-6 text-indigo-600" />
+            <div>
+              <label className="block text-[11px] font-bold text-indigo-900 uppercase tracking-wider">Target GCSE Grade</label>
+              <select
+                value={session.targetGrade}
+                onChange={(e) => handleTargetGradeChange(Number(e.target.value))}
+                className="bg-white border border-indigo-200 text-indigo-950 font-bold text-sm rounded-lg px-2.5 py-1 focus:ring-2 focus:ring-indigo-500"
+              >
+                {[4, 5, 6, 7, 8, 9].map(g => (
+                  <option key={g} value={g}>Grade {g} (Target)</option>
+                ))}
+              </select>
+            </div>
+          </div>
         </div>
 
-        {/* Target Grade Selector */}
-        <div className="flex items-center gap-4 bg-indigo-50/80 border border-indigo-100 p-3 rounded-xl">
-          <Award className="w-6 h-6 text-indigo-600" />
-          <div>
-            <label className="block text-[11px] font-bold text-indigo-900 uppercase tracking-wider">Target GCSE Grade</label>
-            <select
-              value={session.targetGrade}
-              onChange={(e) => handleTargetGradeChange(Number(e.target.value))}
-              className="bg-white border border-indigo-200 text-indigo-950 font-bold text-sm rounded-lg px-2.5 py-1 focus:ring-2 focus:ring-indigo-500"
-            >
-              {[4, 5, 6, 7, 8, 9].map(g => (
-                <option key={g} value={g}>Grade {g} (Target)</option>
-              ))}
-            </select>
+        {/* Search Bar & Quick Assessment CTA */}
+        <div className="pt-2 border-t border-slate-100 dark:border-slate-800 flex flex-col md:flex-row items-center gap-3">
+          <div className="w-full">
+            <SearchBar placeholder="Search any topic (e.g. Macbeth, Quadratic, Cold War, Mitosis, Energy)..." />
           </div>
+          <button
+            onClick={() => setIsQuickAssessmentOpen(true)}
+            className="w-full md:w-auto shrink-0 px-5 py-3.5 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white font-extrabold text-sm rounded-2xl shadow-md flex items-center justify-center gap-2 transition-all"
+          >
+            <Zap className="w-4 h-4 fill-white" />
+            <span>5-Question Test</span>
+          </button>
         </div>
       </div>
 
@@ -109,7 +135,7 @@ export default function Dashboard() {
             <Sparkles className="w-5 h-5 text-amber-500" />
           </div>
           <div className="text-3xl font-extrabold text-slate-900">{dailyStats.streakDays} Days 🔥</div>
-          <p className="text-xs text-slate-500 mt-2">Keep your daily revision momentum going!</p>
+          <p className="text-xs text-slate-500 mt-2">Active daily momentum tracking</p>
         </div>
 
         <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
@@ -147,25 +173,25 @@ export default function Dashboard() {
           </div>
           <h2 className="text-xl font-bold text-white mb-2">Recommended Focus Topic Today</h2>
           <p className="text-slate-300 text-sm mb-6">
-            Error analysis from recent practice: <strong>Simultaneous Equations</strong> mastery is currently 42%. A targeted practice set has been generated for Grade {session.targetGrade}.
+            Error analysis from recent practice: <strong>Quadratic Equations & Factoring</strong> requires mastery reinforcement for Target Grade {session.targetGrade}.
           </p>
 
           <div className="flex flex-wrap gap-4">
             <Link
-              href="/practice?topic=m-alg-2"
+              href="/practice?topicId=m-alg-1"
               className="inline-flex items-center gap-2 bg-white text-indigo-900 hover:bg-slate-100 font-bold px-5 py-3 rounded-xl text-sm transition-all shadow-md"
             >
-              <span>Start Focused Practice</span>
+              <span>Start Adaptive Practice</span>
               <ArrowRight className="w-4 h-4" />
             </Link>
 
-            <Link
-              href="/diagnostic"
+            <button
+              onClick={() => setIsQuickAssessmentOpen(true)}
               className="inline-flex items-center gap-2 bg-white/10 hover:bg-white/20 text-white font-medium px-5 py-3 rounded-xl text-sm transition-all border border-white/20"
             >
-              <RefreshCw className="w-4 h-4" />
-              <span>Retake Diagnostic Test</span>
-            </Link>
+              <Zap className="w-4 h-4 text-yellow-300 fill-yellow-300" />
+              <span>Quick 5-Question Test</span>
+            </button>
           </div>
         </div>
 
@@ -181,7 +207,7 @@ export default function Dashboard() {
               {recommendedTopics.map((rec, i) => (
                 <div key={i} className="p-3 rounded-xl bg-slate-50 border border-slate-200">
                   <div className="flex items-center justify-between text-xs font-bold text-slate-900 mb-1">
-                    <span>{rec.topicId === 'm-alg-2' ? 'Simultaneous Equations' : 'Surds & Indices'}</span>
+                    <span>{rec.topicId === 'm-alg-2' ? 'Simultaneous Equations' : 'Quadratic Equations'}</span>
                     <span className="text-amber-600">Priority: High</span>
                   </div>
                   <p className="text-[11px] text-slate-500">{rec.reason}</p>
@@ -200,7 +226,14 @@ export default function Dashboard() {
 
       </div>
 
+      {/* Quick Assessment Modal */}
+      <QuickAssessmentModal
+        isOpen={isQuickAssessmentOpen}
+        onClose={() => setIsQuickAssessmentOpen(false)}
+      />
+
     </div>
   );
 }
+
 

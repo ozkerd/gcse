@@ -2,31 +2,39 @@
 
 import React, { useState, useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
-import { Sparkles, HelpCircle, CheckCircle2, XCircle, ArrowRight, Lightbulb, RefreshCw, Award } from 'lucide-react';
-import { INITIAL_SEED_QUESTIONS, SeedQuestion, GCSE_TOPICS } from '@/lib/curriculum/gcse-data';
+import { Sparkles, HelpCircle, CheckCircle2, XCircle, ArrowRight, Lightbulb, RefreshCw, Award, Search } from 'lucide-react';
+import { INITIAL_SEED_QUESTIONS, SeedQuestion, GCSE_TOPICS, GCSE_SUBJECTS } from '@/lib/curriculum/gcse-data';
 import { KaTeXRenderer } from '@/components/KaTeXRenderer';
 import { AIGenerator, DeepExplanationResult } from '@/lib/ai/generator';
 import { DeepExplanationModal } from '@/components/DeepExplanationModal';
 import { UserStore } from '@/lib/user-store';
+import { AdaptiveEngine } from '@/lib/adaptive/engine';
+import { SearchBar } from '@/components/SearchBar';
 
 function PracticeContent() {
   const searchParams = useSearchParams();
   const subjectParam = searchParams.get('subject');
-  const topicParam = searchParams.get('topic');
+  const topicParam = searchParams.get('topic') || searchParams.get('topicId');
+  const searchQueryParam = searchParams.get('searchQuery');
 
-  // Filter seed questions based on subject or topic if provided
-  const availableQuestions = INITIAL_SEED_QUESTIONS.filter(q => {
-    if (topicParam) return q.topicId === topicParam;
-    if (subjectParam) {
-      const topic = GCSE_TOPICS.find(t => t.id === q.topicId);
-      return topic?.subjectId === subjectParam;
-    }
-    return true;
-  });
+  // Determine target topic
+  let initialTopicId = 'm-alg-1'; // Default
+  if (topicParam) {
+    initialTopicId = topicParam;
+  } else if (searchQueryParam) {
+    const matched = GCSE_TOPICS.find(t => 
+      t.topicName.toLowerCase().includes(searchQueryParam.toLowerCase()) ||
+      t.unitName.toLowerCase().includes(searchQueryParam.toLowerCase()) ||
+      t.description.toLowerCase().includes(searchQueryParam.toLowerCase())
+    );
+    if (matched) initialTopicId = matched.id;
+  } else if (subjectParam) {
+    const matched = GCSE_TOPICS.find(t => t.subjectId === subjectParam);
+    if (matched) initialTopicId = matched.id;
+  }
 
-  const seedQuestions = availableQuestions.length > 0 ? availableQuestions : INITIAL_SEED_QUESTIONS;
-
-  const [currentQuestion, setCurrentQuestion] = useState<SeedQuestion>(seedQuestions[0]);
+  const [activeTopicId, setActiveTopicId] = useState<string>(initialTopicId);
+  const [currentQuestion, setCurrentQuestion] = useState<SeedQuestion>(INITIAL_SEED_QUESTIONS[0]);
   const [selectedOption, setSelectedOption] = useState<string | null>(null);
   const [hasSubmitted, setHasSubmitted] = useState<boolean>(false);
   const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
@@ -35,14 +43,23 @@ function PracticeContent() {
   const [totalAttempts, setTotalAttempts] = useState<number>(0);
   const [loadingNewQuestion, setLoadingNewQuestion] = useState<boolean>(false);
 
+  // Load adaptive question when activeTopicId or params change
   useEffect(() => {
-    if (seedQuestions.length > 0) {
-      setCurrentQuestion(seedQuestions[0]);
-    }
-  }, [subjectParam, topicParam]);
+    const targetId = topicParam || initialTopicId;
+    setActiveTopicId(targetId);
+    
+    const masteries = UserStore.getTopicMasteries();
+    const topicRecord = masteries[targetId];
+    const currentGrade = topicRecord?.currentGradeLevel || 4;
 
+    const q = AdaptiveEngine.getAdaptiveQuestionForTopic(targetId, currentGrade);
+    setCurrentQuestion(q);
+    setSelectedOption(null);
+    setHasSubmitted(false);
+  }, [subjectParam, topicParam, searchQueryParam]);
+
+  const currentTopic = GCSE_TOPICS.find(t => t.id === activeTopicId) || GCSE_TOPICS[0];
   const isCorrect = selectedOption === currentQuestion.correctAnswer;
-  const currentTopic = GCSE_TOPICS.find(t => t.id === currentQuestion.topicId);
 
   const handleSubmit = () => {
     if (!selectedOption || hasSubmitted) return;
@@ -54,8 +71,9 @@ function PracticeContent() {
       setScoreCount(prev => prev + 1);
     }
 
-    // Dynamically record attempt in UserStore cookies / state
+    // Record attempt in UserStore and update Adaptive Mastery!
     UserStore.recordQuestionAttempt(correct);
+    UserStore.updateTopicMastery(activeTopicId, correct, currentQuestion.gradeLevel);
   };
 
   const handleOpenDeepAnalysis = async () => {
@@ -69,9 +87,13 @@ function PracticeContent() {
     setSelectedOption(null);
     setHasSubmitted(false);
 
-    const nextIdx = (seedQuestions.indexOf(currentQuestion) + 1) % seedQuestions.length;
-    const nextQ = await AIGenerator.generateQuestion(seedQuestions[nextIdx].topicId, 7);
-    
+    // Fetch updated topic mastery to determine new adaptive grade level
+    const masteries = UserStore.getTopicMasteries();
+    const topicRecord = masteries[activeTopicId];
+    const nextGrade = topicRecord?.currentGradeLevel || 4;
+
+    // Load next adaptive question for topic
+    const nextQ = AdaptiveEngine.getAdaptiveQuestionForTopic(activeTopicId, nextGrade);
     setCurrentQuestion(nextQ);
     setLoadingNewQuestion(false);
   };
@@ -79,41 +101,54 @@ function PracticeContent() {
   return (
     <div className="max-w-4xl mx-auto space-y-6">
       
-      {/* Top Banner */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
-        <div>
-          <div className="flex items-center gap-2 text-xs font-bold text-indigo-600 uppercase tracking-wider">
-            <Sparkles className="w-4 h-4 text-yellow-500" />
-            AI Question Engine
+      {/* Search Header */}
+      <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm space-y-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div>
+            <div className="flex items-center gap-2 text-xs font-bold text-indigo-600 uppercase tracking-wider">
+              <Sparkles className="w-4 h-4 text-yellow-500" />
+              Adaptive AI Question Engine
+            </div>
+            <h1 className="text-xl sm:text-2xl font-extrabold text-slate-900 mt-0.5">
+              {currentTopic.topicName}
+            </h1>
+            <p className="text-xs text-slate-500 mt-0.5">
+              Unit: {currentTopic.unitName} • Grade {currentTopic.minGrade}–{currentTopic.maxGrade} Specification
+            </p>
           </div>
-          <h1 className="text-xl font-bold text-slate-900 mt-0.5">{currentTopic?.topicName || 'GCSE Adaptive Trainer'}</h1>
+
+          {/* Live Score Counter */}
+          <div className="flex items-center gap-3 bg-indigo-50/80 border border-indigo-100 px-4 py-2 rounded-2xl shrink-0">
+            <Award className="w-5 h-5 text-indigo-600" />
+            <div className="text-xs">
+              <span className="text-slate-500 font-medium">Accuracy: </span>
+              <span className="font-extrabold text-indigo-900">
+                {totalAttempts > 0 ? Math.round((scoreCount / totalAttempts) * 100) : 100}% ({scoreCount}/{totalAttempts})
+              </span>
+            </div>
+          </div>
         </div>
 
-        {/* Live Score Counter */}
-        <div className="flex items-center gap-3 bg-slate-50 border border-slate-200 px-4 py-2 rounded-xl">
-          <Award className="w-5 h-5 text-indigo-600" />
-          <div className="text-xs">
-            <span className="text-slate-500 font-medium">Session Accuracy: </span>
-            <span className="font-extrabold text-indigo-900">
-              {totalAttempts > 0 ? Math.round((scoreCount / totalAttempts) * 100) : 100}% ({scoreCount}/{totalAttempts})
-            </span>
-          </div>
+        {/* Instant Topic Search */}
+        <div className="pt-2">
+          <SearchBar placeholder="Search & switch to another topic (e.g. Macbeth, Mitosis, Cold War, Trigonometry)..." />
         </div>
       </div>
 
       {/* Main Question Card */}
-      <div className="bg-white rounded-2xl p-6 sm:p-8 border border-slate-200 shadow-md space-y-6">
+      <div className="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200 shadow-md space-y-6">
         
         {/* Question Header & Grade Tag */}
         <div className="flex items-center justify-between border-b border-slate-100 pb-4">
-          <span className="px-3 py-1 bg-indigo-50 border border-indigo-200 text-indigo-800 rounded-full font-mono text-xs font-bold">
-            Target Grade {currentQuestion.gradeLevel} Level Question
+          <span className="px-3.5 py-1 bg-indigo-50 border border-indigo-200 text-indigo-800 rounded-full font-mono text-xs font-bold flex items-center gap-1.5">
+            <Sparkles className="w-3.5 h-3.5 text-yellow-500" />
+            Target Grade {currentQuestion.gradeLevel} Question
           </span>
           <span className="text-xs font-semibold text-slate-400">ID: {currentQuestion.id}</span>
         </div>
 
         {/* Question Body */}
-        <div className="bg-slate-50/80 border border-slate-200/80 rounded-xl p-5">
+        <div className="bg-slate-50/80 border border-slate-200/80 rounded-2xl p-5 sm:p-6">
           <div className="text-base sm:text-lg font-bold text-slate-900 leading-relaxed">
             <KaTeXRenderer content={currentQuestion.questionText} />
           </div>
@@ -140,9 +175,15 @@ function PracticeContent() {
                 key={idx}
                 disabled={hasSubmitted}
                 onClick={() => setSelectedOption(option)}
-                className={`w-full text-left p-4 rounded-xl border text-sm transition-all flex items-center justify-between ${btnStyle}`}
+                className={`w-full text-left p-4 rounded-2xl border-2 text-sm transition-all flex items-center justify-between ${btnStyle}`}
               >
-                <KaTeXRenderer content={option} />
+                <div className="flex items-center gap-3">
+                  <span className="w-7 h-7 rounded-xl bg-slate-100 font-bold text-xs flex items-center justify-center shrink-0">
+                    {String.fromCharCode(65 + idx)}
+                  </span>
+                  <KaTeXRenderer content={option} />
+                </div>
+
                 {hasSubmitted && option === currentQuestion.correctAnswer && (
                   <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0" />
                 )}
@@ -156,23 +197,23 @@ function PracticeContent() {
 
         {/* Feedback / Result Banner */}
         {hasSubmitted && (
-          <div className={`p-4 rounded-xl border flex flex-col sm:flex-row sm:items-center justify-between gap-4 ${
-            isCorrect ? 'bg-emerald-50 border-emerald-200 text-emerald-950' : 'bg-rose-50 border-rose-200 text-rose-950'
+          <div className={`p-5 rounded-2xl border-2 flex flex-col sm:flex-row sm:items-center justify-between gap-4 ${
+            isCorrect ? 'bg-emerald-50/80 border-emerald-200 text-emerald-950' : 'bg-rose-50/80 border-rose-200 text-rose-950'
           }`}>
             <div className="flex items-center gap-3">
               {isCorrect ? (
-                <CheckCircle2 className="w-6 h-6 text-emerald-600 shrink-0" />
+                <CheckCircle2 className="w-7 h-7 text-emerald-600 shrink-0" />
               ) : (
-                <XCircle className="w-6 h-6 text-rose-600 shrink-0" />
+                <XCircle className="w-7 h-7 text-rose-600 shrink-0" />
               )}
               <div>
-                <h4 className="font-bold text-sm">
-                  {isCorrect ? 'Congratulations! Correct Answer 🎉' : 'Nearly there! Review the step-by-step solution.'}
+                <h4 className="font-bold text-base">
+                  {isCorrect ? 'Correct Answer! 🎉' : 'Nearly there! Review solution below.'}
                 </h4>
-                <p className="text-xs opacity-90">
+                <p className="text-xs opacity-90 mt-0.5">
                   {isCorrect
-                    ? 'Topic mastery score increased. Preparing next difficulty level.'
-                    : 'Click "Deep Analysis & Hint" to review examiner mark schemes and concept summaries.'}
+                    ? 'Topic mastery increased! Answer 2 in a row correctly to unlock higher Grade questions.'
+                    : 'Reinforcing foundational concepts for this topic before promoting difficulty.'}
                 </p>
               </div>
             </div>
@@ -218,16 +259,16 @@ function PracticeContent() {
               <button
                 onClick={handleNextQuestion}
                 disabled={loadingNewQuestion}
-                className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-sm shadow-md transition-all"
+                className="inline-flex items-center gap-2 px-6 py-3 rounded-2xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-sm shadow-md transition-all"
               >
                 {loadingNewQuestion ? (
                   <>
                     <RefreshCw className="w-4 h-4 animate-spin" />
-                    <span>Generating Next Question...</span>
+                    <span>Loading Adaptive Question...</span>
                   </>
                 ) : (
                   <>
-                    <span>Next Question</span>
+                    <span>Next Adaptive Question</span>
                     <ArrowRight className="w-4 h-4" />
                   </>
                 )}
@@ -264,5 +305,6 @@ export default function PracticePage() {
     </Suspense>
   );
 }
+
 
 
