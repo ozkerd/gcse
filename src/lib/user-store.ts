@@ -1,5 +1,7 @@
 'use client';
 
+import { SeedQuestion } from './curriculum/gcse-data';
+
 export type UserRole = 'guest' | 'student' | 'parent';
 
 export interface UserSession {
@@ -245,6 +247,27 @@ export class UserStore {
       email: parentEmail || 'parent@primerllm.com',
       studentName: studentName || 'Alex (Student)',
     });
+  }
+
+  static getStoredQuestions(): SeedQuestion[] {
+    const raw = getCookie('gcse_stored_questions');
+    if (raw) {
+      try {
+        return JSON.parse(raw);
+      } catch (e) {
+        // ignore
+      }
+    }
+    return [];
+  }
+
+  static saveGeneratedQuestion(question: SeedQuestion) {
+    const existing = UserStore.getStoredQuestions();
+    // Avoid duplicate IDs
+    if (!existing.some(q => q.id === question.id)) {
+      const updated = [question, ...existing].slice(0, 100); // Keep top 100 recent AI generated questions
+      setCookie('gcse_stored_questions', JSON.stringify(updated));
+    }
   }
 
   static logout() {

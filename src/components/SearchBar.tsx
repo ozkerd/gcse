@@ -36,7 +36,8 @@ export function SearchBar({
       const nameMatch = t.topicName.toLowerCase().includes(q);
       const unitMatch = t.unitName.toLowerCase().includes(q);
       const descMatch = t.description.toLowerCase().includes(q);
-      return subjectMatch || nameMatch || unitMatch || descMatch;
+      const keywordMatch = t.keywords?.some((k) => k.toLowerCase().includes(q));
+      return subjectMatch || nameMatch || unitMatch || descMatch || keywordMatch;
     }).map((topic) => {
       const subject = GCSE_SUBJECTS.find((s) => s.id === topic.subjectId);
       return {

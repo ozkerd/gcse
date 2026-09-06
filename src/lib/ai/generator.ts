@@ -49,7 +49,10 @@ Format requirement: Respond ONLY with a valid raw JSON object (no markdown quote
 - commonMistakes: array of strings
 - examTip: string`;
 
-        const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${geminiKey}`, {
+        // Select optimal model: gemini-2.5-pro for Grade 8-9 reasoning, gemini-2.5-flash / gemini-2.0-flash for others
+        const modelName = targetGrade >= 8 ? 'gemini-2.5-pro' : 'gemini-2.5-flash';
+
+        const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${geminiKey}`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -63,7 +66,7 @@ Format requirement: Respond ONLY with a valid raw JSON object (no markdown quote
           const rawText = data.candidates[0].content.parts[0].text;
           const parsed = JSON.parse(rawText);
           
-          return {
+          const newQ: SeedQuestion = {
             id: `gemini-q-${Date.now()}`,
             topicId: topic.id,
             gradeLevel: targetGrade,
@@ -79,6 +82,14 @@ Format requirement: Respond ONLY with a valid raw JSON object (no markdown quote
               examTip: parsed.examTip,
             },
           };
+
+          // Save generated question into question bank
+          if (typeof window !== 'undefined') {
+            const { UserStore } = await import('../user-store');
+            UserStore.saveGeneratedQuestion(newQ);
+          }
+
+          return newQ;
         }
       } catch (e) {
         console.warn('Google Gemini API call failed, using dynamic built-in generator:', e);
@@ -115,17 +126,17 @@ Format requirement: Respond ONLY with a valid raw JSON object (no markdown quote
         options,
         correctAnswer: correctStr,
         explanation: {
-          overview: `$${a > 1 ? a : ''}x^2 + ${b}x + ${c} = 0$ denklemini çarpanlarına ayırmak için toplamı $b = ${b}$ ve çarpımı $a \\times c = ${a * c}$ olan iki sayı buluyoruz.`,
+          overview: `To factorize $${a > 1 ? a : ''}x^2 + ${b}x + ${c} = 0$, we find two numbers that sum to $b = ${b}$ and multiply to $a \\times c = ${a * c}$.`,
           stepByStep: [
-            `$a \\times c = ${a} \\times ${c} = ${a * c}$ değerini hesaplayın.`,
-            `Çarpımları ${a * c} ve toplamları ${b} olan sayılar: ${r1} ve ${a * r2}.`,
-            `Orta terimi açın: $${a > 1 ? a : ''}x^2 + ${a * r2}x + ${r1}x + ${c} = 0$.`,
-            `Ortak çarpan parantezine alın: $(${a > 1 ? a : ''}x + ${r1})(x + ${r2}) = 0$.`,
-            `Kökler: $x = ${ans1}$ veya $x = ${ans2}$.`
+            `Calculate $a \\times c = ${a} \\times ${c} = ${a * c}$.`,
+            `Identify numbers that multiply to ${a * c} and sum to ${b}: these are ${r1} and ${a * r2}.`,
+            `Split middle term: $${a > 1 ? a : ''}x^2 + ${a * r2}x + ${r1}x + ${c} = 0$.`,
+            `Factorize by grouping: $(${a > 1 ? a : ''}x + ${r1})(x + ${r2}) = 0$.`,
+            `Solve for roots: $x = ${ans1}$ or $x = ${ans2}$.`
           ],
-          keyConcept: 'İkinci dereceden denklemlerde çarpanlara ayırma yöntemi ve kök bulma kuralı.',
-          commonMistakes: ['Kökleri bulurken işaretleri tersine çevirmeyi unutmak.'],
-          examTip: 'Bulduğunuz x değerlerini orijinal denklemde yerine koyarak sağlama yapın!'
+          keyConcept: 'Factoring quadratic expressions and solving for real roots.',
+          commonMistakes: ['Forgetting to invert signs when solving factorized brackets equal to zero.'],
+          examTip: 'Substitute your values of x back into the original quadratic equation to verify!'
         }
       };
     }
@@ -144,7 +155,7 @@ Format requirement: Respond ONLY with a valid raw JSON object (no markdown quote
   }
 
   /**
-   * "Daha Fazla Bilgi" (More Info & Deep Conceptual Analysis Engine)
+   * Deep Conceptual Analysis Engine
    */
   static async generateDeepAnalysis(
     question: SeedQuestion,
@@ -160,15 +171,15 @@ Format requirement: Respond ONLY with a valid raw JSON object (no markdown quote
       examTip: question.explanation.examTip,
       relatedFormulae: topic?.keyFormulae || [],
       practiceCheck: {
-        questionText: `Pekiştirme Sorusu: ${topic?.topicName || 'Bu konu'} ile ilgili benzer bir mantık sorulduğunda ilk yapılması gereken nedir?`,
+        questionText: `Concept Practice Check: When solving a multi-mark GCSE question regarding ${topic?.topicName || 'this topic'}, what is the recommended first step?`,
         options: [
-          'Sorudaki verilen ve istenen büyüklükleri listelemek ve formülü düzenlemek',
-          'Rastgele sayılan değerleri çarpmak',
-          'Formül kullanmadan doğrudan tahmin yürütmek',
-          'Doğrudan cevabı boş bırakmak'
+          'State key formulae, identify given values, and rearrange for the unknown variable',
+          'Multiply random numbers provided in the question stem',
+          'Guess the numerical answer without writing working steps',
+          'Skip writing methods to save time'
         ],
-        correctAnswer: 'Sorudaki verilen ve istenen büyüklükleri listelemek ve formülü düzenlemek',
-        explanation: 'GCSE sınavlarında adımları ve formülü doğru yazmak, nihai cevap yanlış olsa bile işlem puanı (Method Marks) kazanmanızı sağlar!'
+        correctAnswer: 'State key formulae, identify given values, and rearrange for the unknown variable',
+        explanation: 'In GCSE examinations, stating formulae and showing working steps guarantees Method Marks (M Marks) even if a final calculation error occurs!'
       }
     };
   }

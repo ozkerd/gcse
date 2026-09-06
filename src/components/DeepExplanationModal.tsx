@@ -31,7 +31,7 @@ export const DeepExplanationModal: React.FC<Props> = ({ isOpen, onClose, explana
               <Lightbulb className="w-6 h-6 animate-pulse" />
             </div>
             <div>
-              <span className="text-xs font-semibold uppercase tracking-wider text-indigo-200">Daha Fazla Bilgi & Derin Konu Analizi</span>
+              <span className="text-xs font-semibold uppercase tracking-wider text-indigo-200">Deep Concept & Examiner Mark Scheme Analysis</span>
               <h2 className="text-xl font-bold text-white">{topicName}</h2>
             </div>
           </div>
@@ -50,7 +50,7 @@ export const DeepExplanationModal: React.FC<Props> = ({ isOpen, onClose, explana
           <div className="bg-indigo-50/80 border border-indigo-100 rounded-xl p-4 flex items-start gap-3">
             <BookOpen className="w-5 h-5 text-indigo-600 mt-0.5 shrink-0" />
             <div>
-              <h3 className="font-semibold text-indigo-900 text-sm mb-1">Konu Özeti</h3>
+              <h3 className="font-semibold text-indigo-900 text-sm mb-1">Topic Summary & Overview</h3>
               <p className="text-sm text-indigo-950 leading-relaxed">
                 <KaTeXRenderer content={explanation.overview} />
               </p>
@@ -62,7 +62,7 @@ export const DeepExplanationModal: React.FC<Props> = ({ isOpen, onClose, explana
             <div className="bg-slate-900 text-white rounded-xl p-4 border border-slate-800">
               <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-2 flex items-center gap-2">
                 <Sparkles className="w-4 h-4 text-yellow-400" />
-                Önemli GCSE Formülleri
+                Key GCSE Formulae & Concepts
               </h3>
               <div className="flex flex-wrap gap-4">
                 {explanation.relatedFormulae.map((f, i) => (
@@ -78,7 +78,7 @@ export const DeepExplanationModal: React.FC<Props> = ({ isOpen, onClose, explana
           <div>
             <h3 className="text-base font-bold text-slate-900 mb-3 flex items-center gap-2">
               <CheckCircle2 className="w-5 h-5 text-emerald-600" />
-              Adım Adım Çözüm Analizi
+              Step-by-Step Worked Solution
             </h3>
             <div className="space-y-2.5">
               {explanation.stepByStep.map((step, idx) => (
@@ -99,7 +99,7 @@ export const DeepExplanationModal: React.FC<Props> = ({ isOpen, onClose, explana
             <div className="bg-amber-50 border border-amber-200/80 rounded-xl p-4">
               <h4 className="font-bold text-amber-900 text-sm mb-2 flex items-center gap-2">
                 <AlertTriangle className="w-4 h-4 text-amber-600" />
-                Sık Yapılan GCSE Hataları
+                Common GCSE Pitfalls & Mistakes
               </h4>
               <ul className="list-disc list-inside space-y-1.5 text-xs text-amber-950">
                 {explanation.commonMistakes.map((m, i) => (
@@ -111,7 +111,7 @@ export const DeepExplanationModal: React.FC<Props> = ({ isOpen, onClose, explana
             <div className="bg-purple-50 border border-purple-200/80 rounded-xl p-4">
               <h4 className="font-bold text-purple-900 text-sm mb-2 flex items-center gap-2">
                 <Sparkles className="w-4 h-4 text-purple-600" />
-                Müfettiş (Examiner) İpucu
+                Examiner Tip
               </h4>
               <p className="text-xs text-purple-950 leading-relaxed">
                 <KaTeXRenderer content={explanation.examTip} />
@@ -123,7 +123,7 @@ export const DeepExplanationModal: React.FC<Props> = ({ isOpen, onClose, explana
           <div className="border border-indigo-200 rounded-xl p-5 bg-gradient-to-b from-indigo-50/40 to-white">
             <div className="flex items-center gap-2 font-bold text-indigo-900 text-sm mb-3">
               <HelpCircle className="w-4 h-4 text-indigo-600" />
-              Pekiştirme Kontrolü: Öğrendiklerinizi Test Edin
+              Concept Mastery Check: Quick Self Test
             </div>
             <p className="text-xs text-slate-700 mb-4 font-medium">
               <KaTeXRenderer content={explanation.practiceCheck.questionText} />
@@ -157,7 +157,7 @@ export const DeepExplanationModal: React.FC<Props> = ({ isOpen, onClose, explana
               <div className={`mt-3 p-3 rounded-lg text-xs font-medium border ${
                 isPracticeCorrect ? 'bg-emerald-100 border-emerald-300 text-emerald-900' : 'bg-rose-100 border-rose-300 text-rose-900'
               }`}>
-                {isPracticeCorrect ? '🎉 Harika! Konu mantığını tam olarak kavradınız.' : '💡 Neredeyse! İpucuna tekrar göz atıp tekrar deneyin.'}
+                {isPracticeCorrect ? '🎉 Excellent! You have mastered this core concept.' : '💡 Almost there! Review the worked solution steps above.'}
                 <div className="mt-1 text-[11px] opacity-90">{explanation.practiceCheck.explanation}</div>
               </div>
             )}
@@ -171,7 +171,7 @@ export const DeepExplanationModal: React.FC<Props> = ({ isOpen, onClose, explana
             onClick={onClose}
             className="px-6 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-xl text-sm transition-colors shadow-md"
           >
-            Anladım, Alıştırmalara Dön
+            Got it, Return to Practice
           </button>
         </div>
 
