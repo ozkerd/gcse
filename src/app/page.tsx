@@ -2,7 +2,7 @@
 
 import React from 'react';
 import Link from 'next/link';
-import { Target, Sparkles, LayoutDashboard, Calendar, Award, ArrowRight, BrainCheck, CheckCircle2, TrendingUp, HelpCircle } from 'lucide-react';
+import { Target, Sparkles, LayoutDashboard, Calendar, Award, ArrowRight, Brain, CheckCircle2, TrendingUp, HelpCircle } from 'lucide-react';
 import { GCSE_SUBJECTS } from '@/lib/curriculum/gcse-data';
 
 export default function Home() {
@@ -108,7 +108,7 @@ export default function Home() {
             <div key={subject.id} className="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm flex flex-col justify-between hover:border-indigo-300 transition-colors">
               <div>
                 <div className="flex items-center justify-between mb-4">
-                  <span className="px-3 py-1 bg-slate-100 text-slate-700 font-mono text-xs font-bold rounded-lg">{subject.examBoard} ({subject.code})</span>
+                  <span className="px-3 py-1 bg-slate-100 text-slate-700 font-mono text-xs font-bold rounded-lg">{subject.code}</span>
                   <Award className="w-5 h-5 text-indigo-600" />
                 </div>
                 <h3 className="text-xl font-bold text-slate-900 mb-2">{subject.name}</h3>
