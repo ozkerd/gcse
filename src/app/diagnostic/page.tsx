@@ -43,8 +43,8 @@ export default function DiagnosticPage() {
         });
       }
     } else {
-      // Full Diagnostic across all subjects/topics tailored for Year Group
-      qList = AdaptiveEngine.getQuickSnapshotQuestions(8).map((q) => ({
+      // Diagnostic questions filtered by selected subject
+      qList = AdaptiveEngine.getQuickSnapshotQuestions(8, selectedSubjectId).map((q) => ({
         ...q,
         gradeLevel: Math.min(9, Math.max(4, q.gradeLevel)),
       }));

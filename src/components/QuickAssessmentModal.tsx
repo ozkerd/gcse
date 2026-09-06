@@ -61,8 +61,8 @@ export function QuickAssessmentModal({ isOpen, onClose }: QuickAssessmentModalPr
         });
       }
     } else {
-      // Random snapshot questions across all topics
-      qList = AdaptiveEngine.getQuickSnapshotQuestions(5).map((q) => ({
+      // Random snapshot questions filtered by selected subject
+      qList = AdaptiveEngine.getQuickSnapshotQuestions(5, selectedSubjectId).map((q) => ({
         ...q,
         gradeLevel: targetGrade,
       }));

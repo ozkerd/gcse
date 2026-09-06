@@ -985,11 +985,36 @@ export const INITIAL_SEED_QUESTIONS: SeedQuestion[] = [
 
 /**
  * Shuffles question options randomly so the correct answer is NOT always option A.
+ * Guarantees that q.correctAnswer is EXACTLY present in the options array.
  */
 export function shuffleQuestionOptions(q: SeedQuestion): SeedQuestion {
   if (!q.options || q.options.length === 0) return q;
 
-  const shuffled = [...q.options];
+  let opts = [...q.options];
+
+  // 1. Ensure correctAnswer is byte-for-byte in the options array
+  const hasExactAnswer = opts.some(o => o === q.correctAnswer);
+  if (!hasExactAnswer) {
+    opts[0] = q.correctAnswer;
+  }
+
+  // 2. Remove any accidental duplicate option strings
+  const uniqueOpts: string[] = [];
+  opts.forEach(opt => {
+    if (!uniqueOpts.includes(opt)) {
+      uniqueOpts.push(opt);
+    }
+  });
+
+  // Top up to 4 options if duplicates were removed
+  let fillerCount = 1;
+  while (uniqueOpts.length < 4) {
+    uniqueOpts.push(`Option ${String.fromCharCode(65 + uniqueOpts.length)}`);
+    fillerCount++;
+  }
+
+  // 3. Fisher-Yates shuffle
+  const shuffled = [...uniqueOpts];
   for (let i = shuffled.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1));
     const temp = shuffled[i];
@@ -1000,6 +1025,7 @@ export function shuffleQuestionOptions(q: SeedQuestion): SeedQuestion {
   return {
     ...q,
     options: shuffled,
+    correctAnswer: q.correctAnswer, // Preserve exact string match
   };
 }
 

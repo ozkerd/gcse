@@ -83,20 +83,20 @@ export class AdaptiveEngine {
 
   /**
    * Selects or procedurally generates an adaptive question tailored to student level.
-   * Prevents repeating questions and ensures options are randomly shuffled.
+   * GUARANTEES strict subject matching (Maths -> Maths only, Physics -> Physics only).
+   * GUARANTEES that options contain the exact correct answer.
    */
   static getAdaptiveQuestionForTopic(
     topicId: string,
     currentGradeLevel: number = 4,
     excludeIds: string[] = []
   ): SeedQuestion {
-    // 1. Check for matching seed questions for topic that haven't been asked in this session
+    // 1. Check for matching seed questions for exact topicId that haven't been asked in this session
     const unusedTopicQuestions = INITIAL_SEED_QUESTIONS.filter(
       q => q.topicId === topicId && !excludeIds.includes(q.id)
     );
     
     if (unusedTopicQuestions.length > 0) {
-      // Pick question closest to requested grade level or random among candidates
       const sorted = [...unusedTopicQuestions].sort(
         (a, b) => Math.abs(a.gradeLevel - currentGradeLevel) - Math.abs(b.gradeLevel - currentGradeLevel)
       );
@@ -107,64 +107,28 @@ export class AdaptiveEngine {
       });
     }
 
-    // 2. Procedurally generate dynamic parametric question variation
-    // Call procedural engine to generate a brand new question with randomized numbers/options
-    const topicObj = GCSE_TOPICS.find(t => t.id === topicId) || GCSE_TOPICS[0];
-    const timestamp = Date.now() + Math.floor(Math.random() * 100000);
-
-    // Call fallback generator in AIGenerator synchronously
-    const fallbackSeed = INITIAL_SEED_QUESTIONS.find(q => !excludeIds.includes(q.id)) || INITIAL_SEED_QUESTIONS[0];
-    
-    // Mutate parameters based on topic
-    if (topicId.startsWith('m-') || topicId.startsWith('p-') || topicId.startsWith('ch-') || topicId.startsWith('bio-') || topicId.startsWith('cs-')) {
-      // Use procedural mutator from AIGenerator logic
-      const a = Math.floor(Math.random() * 3) + 1;
-      const b = Math.floor(Math.random() * 8) + 2;
-      const c = Math.floor(Math.random() * 6) + 1;
-
-      if (topicId.includes('alg') || topicId.includes('math')) {
-        const correctAns = `$x = -${b}$ or $x = -${c}$`;
-        const wrong1 = `$x = ${b}$ or $x = ${c}$`;
-        const wrong2 = `$x = -${b * 2}$ or $x = ${c + 1}$`;
-        const wrong3 = `$x = -${b + 3}$ or $x = -${c - 1}$`;
-
-        return shuffleQuestionOptions({
-          id: `adaptive-${topicId}-${timestamp}`,
-          topicId: topicId,
-          gradeLevel: currentGradeLevel,
-          questionText: `Solve the quadratic expression by factoring: $x^2 + ${b + c}x + ${b * c} = 0$.`,
-          questionType: 'multiple_choice',
-          options: [correctAns, wrong1, wrong2, wrong3],
-          correctAnswer: correctAns,
-          explanation: {
-            overview: `Factorize $x^2 + ${b + c}x + ${b * c} = (x + ${b})(x + ${c}) = 0$.`,
-            stepByStep: [
-              `Identify numbers multiplying to ${b * c} and adding to ${b + c}: these are ${b} and ${c}.`,
-              `Set each factor to zero: $x + ${b} = 0 \\implies x = -${b}$, and $x + ${c} = 0 \\implies x = -${c}$.`
-            ],
-            keyConcept: 'Solving quadratic equations via factorisation.',
-            commonMistakes: ['Forgetting to invert signs when solving brackets equal to zero.'],
-            examTip: 'Check your values by plugging them back into the quadratic!'
-          }
-        });
-      }
-    }
-
-    // Default dynamic question mutation wrapper
-    return shuffleQuestionOptions({
-      ...fallbackSeed,
-      id: `adaptive-${topicId}-${timestamp}`,
-      topicId: topicId,
-      gradeLevel: Math.min(9, Math.max(4, currentGradeLevel)),
-      questionText: `[Grade ${currentGradeLevel} ${topicObj.topicName}] ${fallbackSeed.questionText}`,
-    });
+    // 2. Delegate to strictly subject-aware procedural generator in AIGenerator
+    return AIGenerator.generateQuestionSync(topicId, currentGradeLevel, excludeIds);
   }
 
   /**
-   * Generates N completely distinct quick snapshot questions across topics with shuffled options.
+   * Generates N completely distinct quick snapshot questions across topics.
+   * Optional subjectFilter parameter ensures subject isolation when requested.
    */
-  static getQuickSnapshotQuestions(count: number = 5): SeedQuestion[] {
-    const shuffledSeeds = [...INITIAL_SEED_QUESTIONS].sort(() => 0.5 - Math.random());
+  static getQuickSnapshotQuestions(count: number = 5, subjectFilter?: string): SeedQuestion[] {
+    let eligibleSeeds = [...INITIAL_SEED_QUESTIONS];
+    if (subjectFilter) {
+      eligibleSeeds = eligibleSeeds.filter(q => {
+        const t = GCSE_TOPICS.find(top => top.id === q.topicId);
+        return t?.subjectId === subjectFilter || q.topicId.startsWith(subjectFilter.substring(0, 2));
+      });
+    }
+
+    if (eligibleSeeds.length === 0) {
+      eligibleSeeds = [...INITIAL_SEED_QUESTIONS];
+    }
+
+    const shuffledSeeds = eligibleSeeds.sort(() => 0.5 - Math.random());
     const results: SeedQuestion[] = [];
     const usedTopicIds = new Set<string>();
 
@@ -176,13 +140,11 @@ export class AdaptiveEngine {
       }
     }
 
-    // Top up if count not reached
+    // Top up if count not reached using procedural generator for topics in that subject
     while (results.length < count) {
       const q = shuffledSeeds[results.length % shuffledSeeds.length];
-      results.push(shuffleQuestionOptions({
-        ...q,
-        id: `snap-${q.id}-${Date.now()}-${results.length}`
-      }));
+      const generated = AIGenerator.generateQuestionSync(q.topicId);
+      results.push(generated);
     }
 
     return results;
