@@ -1,5 +1,10 @@
 import { NextResponse } from 'next/server';
+import nodemailer from 'nodemailer';
 
+/**
+ * Gmail SMTP Email Dispatch API Route
+ * Configured with Google App Password & alias noreply@btpsec.com
+ */
 export async function POST(request: Request) {
   try {
     const body = await request.json();
@@ -9,45 +14,48 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Missing required email fields (to, subject, html)' }, { status: 400 });
     }
 
-    const apiKey = process.env.RESEND_API_KEY;
+    const gmailUser = process.env.GMAIL_USER || 'ozkan.erdogan@btpsec.com';
+    // Remove spaces from app password if present
+    const rawPass = process.env.GMAIL_APP_PASSWORD || 'menh nhgw zpys pfnk';
+    const gmailPass = rawPass.replace(/\s+/g, '');
 
-    if (apiKey) {
-      // Send real email via Resend API
-      const resendResponse = await fetch('https://api.resend.com/emails', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${apiKey}`,
-        },
-        body: JSON.stringify({
-          from: from || 'gcse.primerllm <onboarding@resend.dev>',
-          to: [to],
-          subject,
-          html,
-        }),
-      });
+    const fromAddress = from || process.env.GMAIL_FROM || 'gcse.primerllm <noreply@btpsec.com>';
 
-      const resendData = await resendResponse.json();
+    // Create Gmail SMTP transporter
+    const transporter = nodemailer.createTransport({
+      host: 'smtp.gmail.com',
+      port: 465,
+      secure: true, // Use TLS SSL
+      auth: {
+        user: gmailUser,
+        pass: gmailPass,
+      },
+    });
 
-      if (!resendResponse.ok) {
-        console.error('[Resend Email Error]', resendData);
-        return NextResponse.json({ error: 'Resend API failed', details: resendData }, { status: 500 });
-      }
+    // Dispatch email
+    const info = await transporter.sendMail({
+      from: fromAddress,
+      to,
+      subject,
+      html,
+    });
 
-      return NextResponse.json({ success: true, messageId: resendData.id, provider: 'resend' });
-    }
+    console.log(`[Gmail SMTP Success] Message sent to ${to}. MessageId: ${info.messageId}`);
 
-    // Demo / Simulated mode when API key is not configured yet
-    console.log(`[Demo Email Service] Simulating email to ${to} with subject "${subject}"`);
     return NextResponse.json({
       success: true,
-      messageId: `demo-${Date.now()}`,
-      provider: 'simulated',
-      note: 'Set RESEND_API_KEY in environment variables to send real emails.',
+      messageId: info.messageId,
+      provider: 'gmail_smtp',
+      sentTo: to,
     });
 
   } catch (error: any) {
-    console.error('[Email API Route Error]', error);
-    return NextResponse.json({ error: 'Failed to process email dispatch', details: error.message }, { status: 500 });
+    console.error('[Gmail SMTP Error]', error);
+
+    // Fallback: If Gmail SMTP encounters any error (e.g. rate limit), return informative error
+    return NextResponse.json({
+      error: 'Gmail SMTP dispatch failed',
+      details: error.message || String(error),
+    }, { status: 500 });
   }
 }
