@@ -89,13 +89,24 @@ export class AdaptiveEngine {
   static getAdaptiveQuestionForTopic(
     topicId: string,
     currentGradeLevel: number = 4,
-    excludeIds: string[] = []
+    excludeIds: string[] = [],
+    subtopicId?: string
   ): SeedQuestion {
     // 1. Check for matching seed questions for exact topicId that haven't been asked in this session
-    const unusedTopicQuestions = INITIAL_SEED_QUESTIONS.filter(
+    let unusedTopicQuestions = INITIAL_SEED_QUESTIONS.filter(
       q => q.topicId === topicId && !excludeIds.includes(q.id)
     );
     
+    // If a specific subtopic filter is passed, try matching subtopicId or subtopicName
+    if (subtopicId) {
+      const subtopicMatches = unusedTopicQuestions.filter(
+        q => q.subtopicId === subtopicId || q.subtopicName?.toLowerCase() === subtopicId.toLowerCase()
+      );
+      if (subtopicMatches.length > 0) {
+        unusedTopicQuestions = subtopicMatches;
+      }
+    }
+
     if (unusedTopicQuestions.length > 0) {
       const sorted = [...unusedTopicQuestions].sort(
         (a, b) => Math.abs(a.gradeLevel - currentGradeLevel) - Math.abs(b.gradeLevel - currentGradeLevel)

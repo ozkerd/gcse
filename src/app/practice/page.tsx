@@ -15,6 +15,7 @@ function PracticeContent() {
   const searchParams = useSearchParams();
   const subjectParam = searchParams.get('subject');
   const topicParam = searchParams.get('topic') || searchParams.get('topicId');
+  const subtopicParam = searchParams.get('subtopic') || searchParams.get('subtopicId') || undefined;
   const searchQueryParam = searchParams.get('searchQuery');
 
   // Determine target topic
@@ -57,12 +58,12 @@ function PracticeContent() {
     const answeredIds = UserStore.getAnsweredQuestionIds();
     const excludeList = Array.from(new Set([...askedIds, ...answeredIds]));
 
-    const q = AdaptiveEngine.getAdaptiveQuestionForTopic(targetId, currentGrade, excludeList);
+    const q = AdaptiveEngine.getAdaptiveQuestionForTopic(targetId, currentGrade, excludeList, subtopicParam);
     setCurrentQuestion(q);
     setAskedIds(prev => [...prev, q.id]);
     setSelectedOption(null);
     setHasSubmitted(false);
-  }, [subjectParam, topicParam, searchQueryParam]);
+  }, [subjectParam, topicParam, subtopicParam, searchQueryParam]);
 
   const currentTopic = GCSE_TOPICS.find(t => t.id === activeTopicId) || GCSE_TOPICS[0];
   const isCorrect = selectedOption === currentQuestion.correctAnswer;
@@ -102,7 +103,7 @@ function PracticeContent() {
     const excludeList = Array.from(new Set([...askedIds, ...answeredIds, currentQuestion.id]));
 
     // Load next adaptive question for topic ensuring anti-repetition & option shuffling
-    const nextQ = AdaptiveEngine.getAdaptiveQuestionForTopic(activeTopicId, nextGrade, excludeList);
+    const nextQ = AdaptiveEngine.getAdaptiveQuestionForTopic(activeTopicId, nextGrade, excludeList, subtopicParam);
     setAskedIds(prev => [...prev, nextQ.id]);
     setCurrentQuestion(nextQ);
     setLoadingNewQuestion(false);
@@ -149,11 +150,18 @@ function PracticeContent() {
       <div className="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200 shadow-md space-y-6">
         
         {/* Question Header & Grade Tag */}
-        <div className="flex items-center justify-between border-b border-slate-100 pb-4">
-          <span className="px-3.5 py-1 bg-indigo-50 border border-indigo-200 text-indigo-800 rounded-full font-mono text-xs font-bold flex items-center gap-1.5">
-            <Sparkles className="w-3.5 h-3.5 text-yellow-500" />
-            Target Grade {currentQuestion.gradeLevel} Question
-          </span>
+        <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 pb-4">
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="px-3.5 py-1 bg-indigo-50 border border-indigo-200 text-indigo-800 rounded-full font-mono text-xs font-bold flex items-center gap-1.5">
+              <Sparkles className="w-3.5 h-3.5 text-yellow-500" />
+              Target Grade {currentQuestion.gradeLevel} Question
+            </span>
+            {currentQuestion.subtopicName && (
+              <span className="px-3 py-1 bg-amber-50 border border-amber-200 text-amber-900 rounded-full text-xs font-semibold flex items-center gap-1">
+                🎯 {currentQuestion.subtopicName}
+              </span>
+            )}
+          </div>
           <span className="text-xs font-semibold text-slate-400">ID: {currentQuestion.id}</span>
         </div>
 
