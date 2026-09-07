@@ -131,12 +131,16 @@ export class AdaptiveEngine {
     if (subjectFilter) {
       eligibleSeeds = eligibleSeeds.filter(q => {
         const t = GCSE_TOPICS.find(top => top.id === q.topicId);
-        return t?.subjectId === subjectFilter || q.topicId.startsWith(subjectFilter.substring(0, 2));
+        return t?.subjectId === subjectFilter;
       });
     }
 
     if (eligibleSeeds.length === 0) {
-      eligibleSeeds = [...INITIAL_SEED_QUESTIONS];
+      // If specific subject requested but no seeds match, return procedural fallback for that subject's topics
+      const subjectTopics = GCSE_TOPICS.filter(t => t.subjectId === subjectFilter);
+      if (subjectTopics.length > 0) {
+        eligibleSeeds = INITIAL_SEED_QUESTIONS.filter(q => subjectTopics.some(st => st.id === q.topicId));
+      }
     }
 
     const shuffledSeeds = eligibleSeeds.sort(() => 0.5 - Math.random());

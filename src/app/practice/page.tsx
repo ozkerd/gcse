@@ -35,7 +35,13 @@ function PracticeContent() {
   }
 
   const [activeTopicId, setActiveTopicId] = useState<string>(initialTopicId);
-  const [currentQuestion, setCurrentQuestion] = useState<SeedQuestion>(INITIAL_SEED_QUESTIONS[0]);
+  
+  const getInitialQuestion = (): SeedQuestion => {
+    const matchedSeeds = INITIAL_SEED_QUESTIONS.filter(q => q.topicId === initialTopicId);
+    return matchedSeeds.length > 0 ? matchedSeeds[0] : AdaptiveEngine.getAdaptiveQuestionForTopic(initialTopicId);
+  };
+
+  const [currentQuestion, setCurrentQuestion] = useState<SeedQuestion>(getInitialQuestion);
   const [selectedOption, setSelectedOption] = useState<string | null>(null);
   const [hasSubmitted, setHasSubmitted] = useState<boolean>(false);
   const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
