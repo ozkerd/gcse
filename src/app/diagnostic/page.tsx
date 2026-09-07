@@ -28,6 +28,7 @@ export default function DiagnosticPage() {
   const startDiagnostic = () => {
     const yearGradeMap: Record<number, number> = { 8: 4, 9: 5, 10: 6, 11: 8 };
     const targetGrade = yearGradeMap[selectedYear] || 6;
+    UserStore.setSchoolYear(selectedYear);
 
     const answeredIds = UserStore.getAnsweredQuestionIds();
     let qList: SeedQuestion[] = [];
@@ -39,17 +40,11 @@ export default function DiagnosticPage() {
         const gradeLevel = Math.min(9, Math.max(4, g));
         const q = AdaptiveEngine.getAdaptiveQuestionForTopic(selectedTopicId, gradeLevel, usedIds);
         usedIds.push(q.id);
-        qList.push({
-          ...q,
-          gradeLevel,
-        });
+        qList.push(q);
       }
     } else {
-      // Diagnostic questions filtered by selected subject
-      qList = AdaptiveEngine.getQuickSnapshotQuestions(8, selectedSubjectId).map((q) => ({
-        ...q,
-        gradeLevel: Math.min(9, Math.max(4, q.gradeLevel)),
-      }));
+      // Diagnostic questions filtered by selected subject and calibrated to student targetGrade (20% MC, 80% non-MC)
+      qList = AdaptiveEngine.getQuickSnapshotQuestions(8, selectedSubjectId, targetGrade);
     }
 
     setQuestions(qList);

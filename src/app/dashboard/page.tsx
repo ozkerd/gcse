@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { Award, Sparkles, TrendingUp, Calendar, AlertCircle, ArrowRight, CheckCircle, RefreshCw, Zap } from 'lucide-react';
+import { Award, Sparkles, TrendingUp, Calendar, AlertCircle, ArrowRight, CheckCircle, RefreshCw, Zap, GraduationCap } from 'lucide-react';
 import { AdaptiveEngine } from '@/lib/adaptive/engine';
 import { UserStore, UserSession, DailyStats } from '@/lib/user-store';
 import { SearchBar } from '@/components/SearchBar';
@@ -80,20 +80,42 @@ export default function Dashboard() {
             </p>
           </div>
 
-          {/* Target Grade Selector */}
-          <div className="flex items-center gap-4 bg-indigo-50/80 border border-indigo-100 p-3 rounded-2xl shrink-0">
-            <Award className="w-6 h-6 text-indigo-600" />
-            <div>
-              <label className="block text-[11px] font-bold text-indigo-900 uppercase tracking-wider">Target GCSE Grade</label>
-              <select
-                value={session.targetGrade}
-                onChange={(e) => handleTargetGradeChange(Number(e.target.value))}
-                className="bg-white border border-indigo-200 text-indigo-950 font-bold text-sm rounded-lg px-2.5 py-1 focus:ring-2 focus:ring-indigo-500"
-              >
-                {[4, 5, 6, 7, 8, 9].map(g => (
-                  <option key={g} value={g}>Grade {g} (Target)</option>
-                ))}
-              </select>
+          {/* School Year & Target Grade Selectors */}
+          <div className="flex flex-wrap items-center gap-3 shrink-0">
+            <div className="flex items-center gap-3 bg-purple-50 border border-purple-100 p-2.5 rounded-2xl">
+              <GraduationCap className="w-5 h-5 text-purple-600 shrink-0" />
+              <div>
+                <label className="block text-[10px] font-bold text-purple-900 uppercase tracking-wider">School Year</label>
+                <select
+                  value={session.schoolYear || 10}
+                  onChange={(e) => {
+                    const yr = Number(e.target.value);
+                    UserStore.setSchoolYear(yr);
+                  }}
+                  className="bg-white border border-purple-200 text-purple-950 font-bold text-xs rounded-lg px-2 py-1 focus:ring-2 focus:ring-purple-500"
+                >
+                  <option value={8}>Year 8 (Foundation / Gr 4)</option>
+                  <option value={9}>Year 9 (Grade 5)</option>
+                  <option value={10}>Year 10 (Grade 6)</option>
+                  <option value={11}>Year 11 (Grade 8)</option>
+                </select>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-3 bg-indigo-50/80 border border-indigo-100 p-2.5 rounded-2xl">
+              <Award className="w-5 h-5 text-indigo-600 shrink-0" />
+              <div>
+                <label className="block text-[10px] font-bold text-indigo-900 uppercase tracking-wider">Target GCSE Grade</label>
+                <select
+                  value={session.targetGrade}
+                  onChange={(e) => handleTargetGradeChange(Number(e.target.value))}
+                  className="bg-white border border-indigo-200 text-indigo-950 font-bold text-xs rounded-lg px-2 py-1 focus:ring-2 focus:ring-indigo-500"
+                >
+                  {[4, 5, 6, 7, 8, 9].map(g => (
+                    <option key={g} value={g}>Grade {g} (Target)</option>
+                  ))}
+                </select>
+              </div>
             </div>
           </div>
         </div>

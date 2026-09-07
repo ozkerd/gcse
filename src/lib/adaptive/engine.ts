@@ -111,10 +111,7 @@ export class AdaptiveEngine {
       const minDiff = Math.min(...unusedTopicQuestions.map(q => Math.abs(q.gradeLevel - currentGradeLevel)));
       const candidatePool = unusedTopicQuestions.filter(q => Math.abs(q.gradeLevel - currentGradeLevel) <= Math.max(minDiff, 1));
       const chosen = candidatePool[Math.floor(Math.random() * candidatePool.length)];
-      return shuffleQuestionOptions({
-        ...chosen,
-        gradeLevel: currentGradeLevel,
-      });
+      return shuffleQuestionOptions(chosen);
     }
 
     // 2. Delegate to strictly subject-aware procedural generator in AIGenerator
@@ -124,8 +121,10 @@ export class AdaptiveEngine {
   /**
    * Generates N completely distinct quick snapshot questions across topics.
    * Optional subjectFilter parameter ensures subject isolation when requested.
+   * Calibrated to student's targetGrade (Year 8 -> 4, Year 9 -> 5, Year 10 -> 6, Year 11 -> 8).
+   * Strictly enforces 20% Multiple Choice and 80% Non-MC (numerical, short_answer, fill_in_blank).
    */
-  static getQuickSnapshotQuestions(count: number = 5, subjectFilter?: string): SeedQuestion[] {
+  static getQuickSnapshotQuestions(count: number = 5, subjectFilter?: string, targetGrade: number = 6): SeedQuestion[] {
     let eligibleSeeds = [...INITIAL_SEED_QUESTIONS];
     if (subjectFilter) {
       eligibleSeeds = eligibleSeeds.filter(q => {
@@ -135,33 +134,65 @@ export class AdaptiveEngine {
     }
 
     if (eligibleSeeds.length === 0) {
-      // If specific subject requested but no seeds match, return procedural fallback for that subject's topics
-      const subjectTopics = GCSE_TOPICS.filter(t => t.subjectId === subjectFilter);
-      if (subjectTopics.length > 0) {
-        eligibleSeeds = INITIAL_SEED_QUESTIONS.filter(q => subjectTopics.some(st => st.id === q.topicId));
-      }
+      eligibleSeeds = [...INITIAL_SEED_QUESTIONS];
     }
 
-    const shuffledSeeds = eligibleSeeds.sort(() => 0.5 - Math.random());
+    // Prioritize questions near targetGrade (e.g. within 1 grade level)
+    const gradeFiltered = eligibleSeeds.filter(q => Math.abs(q.gradeLevel - targetGrade) <= 1);
+    const pool = gradeFiltered.length >= count * 2 ? gradeFiltered : eligibleSeeds;
+
+    // Strict 20% Multiple Choice / 80% Non-Multiple Choice ratio
+    const mcCount = Math.max(1, Math.round(count * 0.2));
+    const nonMcCount = count - mcCount;
+
+    const mcPool = pool.filter(q => q.questionType === 'multiple_choice').sort(() => 0.5 - Math.random());
+    const nonMcPool = pool.filter(q => q.questionType !== 'multiple_choice').sort(() => 0.5 - Math.random());
+
     const results: SeedQuestion[] = [];
     const usedTopicIds = new Set<string>();
 
-    for (const q of shuffledSeeds) {
-      if (results.length >= count) break;
+    // 1. Pick Multiple Choice questions (distinct topics where possible)
+    for (const q of mcPool) {
+      if (results.filter(r => r.questionType === 'multiple_choice').length >= mcCount) break;
       if (!usedTopicIds.has(q.topicId)) {
         usedTopicIds.add(q.topicId);
         results.push(shuffleQuestionOptions(q));
       }
     }
 
-    // Top up if count not reached using procedural generator for topics in that subject
-    while (results.length < count) {
-      const q = shuffledSeeds[results.length % shuffledSeeds.length];
-      const generated = AIGenerator.generateQuestionSync(q.topicId);
-      results.push(generated);
+    // 2. Pick Non-Multiple Choice questions (distinct topics where possible)
+    for (const q of nonMcPool) {
+      if (results.filter(r => r.questionType !== 'multiple_choice').length >= nonMcCount) break;
+      if (!usedTopicIds.has(q.topicId)) {
+        usedTopicIds.add(q.topicId);
+        results.push(shuffleQuestionOptions(q));
+      }
     }
 
-    return results;
+    // Top up non-MC if topic constraint couldn't fill count
+    for (const q of nonMcPool) {
+      if (results.filter(r => r.questionType !== 'multiple_choice').length >= nonMcCount) break;
+      if (!results.some(r => r.id === q.id)) {
+        results.push(shuffleQuestionOptions(q));
+      }
+    }
+
+    // Top up MC if needed
+    for (const q of mcPool) {
+      if (results.length >= count) break;
+      if (!results.some(r => r.id === q.id)) {
+        results.push(shuffleQuestionOptions(q));
+      }
+    }
+
+    // Fallback if count still not reached
+    while (results.length < count && pool.length > 0) {
+      const q = pool[results.length % pool.length];
+      results.push(shuffleQuestionOptions(q));
+    }
+
+    // Shuffle final results so MC isn't always in the same position
+    return results.sort(() => 0.5 - Math.random());
   }
 
   /**

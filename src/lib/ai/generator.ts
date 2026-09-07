@@ -39,7 +39,13 @@ export class AIGenerator {
 
     // If we still have ready seed questions for this topic, serve them directly first!
     if (unusedSeeds.length > 0) {
-      return AIGenerator.generateQuestionSync(topicId, targetGrade, excludeIds, subtopicId);
+      const minDiff = Math.min(...unusedSeeds.map(q => Math.abs(q.gradeLevel - targetGrade)));
+      const candidates = unusedSeeds.filter(q => Math.abs(q.gradeLevel - targetGrade) <= Math.max(minDiff, 1));
+      const picked = candidates[Math.floor(Math.random() * candidates.length)];
+      return shuffleQuestionOptions({
+        ...picked,
+        gradeLevel: targetGrade,
+      });
     }
     
     // 2. ONLY when all ready seed questions for this topic are exhausted, invoke Gemini API!

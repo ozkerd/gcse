@@ -11,6 +11,7 @@ export interface UserSession {
   studentName?: string;
   parentEmail?: string;
   targetGrade: number;
+  schoolYear?: number; // e.g. 8, 9, 10, 11
   emailReminders?: boolean;
   parentProgressReports?: boolean;
 }
@@ -73,7 +74,8 @@ export class UserStore {
       role: 'guest',
       name: 'Guest Student',
       email: 'guest@primerllm.com',
-      targetGrade: 9,
+      schoolYear: 10,
+      targetGrade: 6,
       emailReminders: true,
       parentProgressReports: true,
     };
@@ -179,13 +181,15 @@ export class UserStore {
 
   static updateTopicMastery(topicId: string, isCorrect: boolean, questionGrade: number): TopicMasteryRecord {
     const masteries = UserStore.getTopicMasteries();
+    const session = UserStore.getSession();
+    const defaultGrade = session.targetGrade || 6;
     const current = masteries[topicId] || {
       topicId,
       masteryScore: 30, // Base starting mastery (30%)
       consecutiveCorrect: 0,
       totalAttempted: 0,
       totalCorrect: 0,
-      currentGradeLevel: 4, // Starts at Foundation Grade 4
+      currentGradeLevel: defaultGrade, // Calibrated by student targetGrade / school year
       isMastered: false,
     };
 
@@ -277,6 +281,13 @@ export class UserStore {
   static setTargetGrade(targetGrade: number) {
     const session = UserStore.getSession();
     UserStore.saveSession({ ...session, targetGrade });
+  }
+
+  static setSchoolYear(schoolYear: number) {
+    const yearGradeMap: Record<number, number> = { 8: 4, 9: 5, 10: 6, 11: 8 };
+    const targetGrade = yearGradeMap[schoolYear] || 6;
+    const session = UserStore.getSession();
+    UserStore.saveSession({ ...session, schoolYear, targetGrade });
   }
 
   static loginAsStudent(

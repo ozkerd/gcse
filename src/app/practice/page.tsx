@@ -37,7 +37,9 @@ function PracticeContent() {
   const [activeTopicId, setActiveTopicId] = useState<string>(initialTopicId);
   
   const getInitialQuestion = (): SeedQuestion => {
-    return AdaptiveEngine.getAdaptiveQuestionForTopic(initialTopicId);
+    const session = UserStore.getSession();
+    const baseGrade = session.targetGrade || 6;
+    return AdaptiveEngine.getAdaptiveQuestionForTopic(initialTopicId, baseGrade);
   };
 
   const [currentQuestion, setCurrentQuestion] = useState<SeedQuestion>(getInitialQuestion);
@@ -56,9 +58,11 @@ function PracticeContent() {
     const targetId = topicParam || initialTopicId;
     setActiveTopicId(targetId);
     
+    const session = UserStore.getSession();
+    const baseGrade = session.targetGrade || 6;
     const masteries = UserStore.getTopicMasteries();
     const topicRecord = masteries[targetId];
-    const currentGrade = topicRecord?.currentGradeLevel || 4;
+    const currentGrade = topicRecord?.currentGradeLevel || baseGrade;
 
     const answeredIds = UserStore.getAnsweredQuestionIds();
     const excludeList = Array.from(new Set([...askedIds, ...answeredIds]));
@@ -100,9 +104,11 @@ function PracticeContent() {
     setHasSubmitted(false);
 
     // Fetch updated topic mastery to determine new adaptive grade level
+    const session = UserStore.getSession();
+    const baseGrade = session.targetGrade || 6;
     const masteries = UserStore.getTopicMasteries();
     const topicRecord = masteries[activeTopicId];
-    const nextGrade = topicRecord?.currentGradeLevel || 4;
+    const nextGrade = topicRecord?.currentGradeLevel || baseGrade;
 
     const answeredIds = UserStore.getAnsweredQuestionIds();
     const excludeList = Array.from(new Set([...askedIds, ...answeredIds, currentQuestion.id]));
