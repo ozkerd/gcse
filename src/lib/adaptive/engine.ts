@@ -119,7 +119,7 @@ export class AdaptiveEngine {
     }
 
     // 2. Delegate to strictly subject-aware procedural generator in AIGenerator
-    return AIGenerator.generateQuestionSync(topicId, currentGradeLevel, excludeIds);
+    return AIGenerator.generateQuestionSync(topicId, currentGradeLevel, excludeIds, subtopicId);
   }
 
   /**

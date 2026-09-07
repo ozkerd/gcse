@@ -108,7 +108,8 @@ Format requirement: Respond ONLY with a valid raw JSON object (no markdown quote
   static generateQuestionSync(
     topicId: string,
     targetGrade: number = 6,
-    excludeIds: string[] = []
+    excludeIds: string[] = [],
+    subtopicId?: string
   ): SeedQuestion {
     const topic = GCSE_TOPICS.find(t => t.id === topicId) || GCSE_TOPICS[0];
     const timestamp = Date.now() + Math.floor(Math.random() * 100000);
@@ -1267,14 +1268,26 @@ Format requirement: Respond ONLY with a valid raw JSON object (no markdown quote
     // -------------------------------------------------------------
     // 6. STRICT TOPIC-BOUND SEED & FALLBACK ENGINE (NO CROSS-TOPIC LEAKAGE!)
     // -------------------------------------------------------------
-    const matchingTopicSeeds = INITIAL_SEED_QUESTIONS.filter(q => q.topicId === topicId && !excludeIds.includes(q.id));
+    let matchingTopicSeeds = INITIAL_SEED_QUESTIONS.filter(q => q.topicId === topicId && !excludeIds.includes(q.id));
+    if (subtopicId) {
+      const subMatches = matchingTopicSeeds.filter(q => q.subtopicId === subtopicId || q.subtopicName?.toLowerCase() === subtopicId.toLowerCase());
+      if (subMatches.length > 0) {
+        matchingTopicSeeds = subMatches;
+      }
+    }
     if (matchingTopicSeeds.length > 0) {
       const base = matchingTopicSeeds[Math.floor(Math.random() * matchingTopicSeeds.length)];
       return shuffleQuestionOptions({ ...base });
     }
 
     // Allow cycling back through topic's own seeds if all have been excluded in current session
-    const allTopicSeeds = INITIAL_SEED_QUESTIONS.filter(q => q.topicId === topicId);
+    let allTopicSeeds = INITIAL_SEED_QUESTIONS.filter(q => q.topicId === topicId);
+    if (subtopicId) {
+      const subMatches = allTopicSeeds.filter(q => q.subtopicId === subtopicId || q.subtopicName?.toLowerCase() === subtopicId.toLowerCase());
+      if (subMatches.length > 0) {
+        allTopicSeeds = subMatches;
+      }
+    }
     if (allTopicSeeds.length > 0) {
       const base = allTopicSeeds[Math.floor(Math.random() * allTopicSeeds.length)];
       return shuffleQuestionOptions({ ...base });
