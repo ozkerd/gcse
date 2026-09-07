@@ -24,11 +24,25 @@ export class AIGenerator {
     topicId: string,
     targetGrade: number,
     examBoard: string = 'AQA',
-    detectedKnowledgeGap?: string
+    detectedKnowledgeGap?: string,
+    excludeIds: string[] = [],
+    subtopicId?: string
   ): Promise<SeedQuestion> {
     const topic = GCSE_TOPICS.find(t => t.id === topicId) || GCSE_TOPICS[0];
+
+    // 1. Check if there are still un-asked seed questions in our ready database first
+    const unusedSeeds = INITIAL_SEED_QUESTIONS.filter(q => 
+      q.topicId === topicId && 
+      !excludeIds.includes(q.id) &&
+      (!subtopicId || q.subtopicId === subtopicId || q.subtopicName?.toLowerCase() === subtopicId.toLowerCase())
+    );
+
+    // If we still have ready seed questions for this topic, serve them directly first!
+    if (unusedSeeds.length > 0) {
+      return AIGenerator.generateQuestionSync(topicId, targetGrade, excludeIds, subtopicId);
+    }
     
-    // Check for Gemini API key
+    // 2. ONLY when all ready seed questions for this topic are exhausted, invoke Gemini API!
     const geminiKey = typeof process !== 'undefined' 
       ? (process.env.GEMINI_API_KEY || process.env.NEXT_PUBLIC_GEMINI_API_KEY) 
       : null;
@@ -97,7 +111,7 @@ Format requirement: Respond ONLY with a valid raw JSON object (no markdown quote
       }
     }
 
-    return AIGenerator.generateQuestionSync(topicId, targetGrade);
+    return AIGenerator.generateQuestionSync(topicId, targetGrade, excludeIds, subtopicId);
   }
 
   /**
