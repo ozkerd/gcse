@@ -75,6 +75,11 @@ export function QuestionCard({
           <span className="px-3 py-1 bg-slate-100 border border-slate-200 text-slate-700 rounded-full text-xs font-semibold uppercase tracking-wide">
             {question.questionType.replace('_', ' ')}
           </span>
+          {question.subtopicName && (
+            <span className="px-3 py-1 bg-amber-50 border border-amber-200 text-amber-900 rounded-full text-xs font-semibold flex items-center gap-1">
+              🎯 {question.subtopicName}
+            </span>
+          )}
         </div>
         <span className="text-xs font-semibold text-slate-400">ID: {question.id}</span>
       </div>
