@@ -35,10 +35,11 @@ export default function DiagnosticPage() {
     const usedIds: string[] = [...answeredIds];
 
     if (mode === 'specific') {
-      // Diagnostic specifically for chosen topic across difficulty levels
+      // Diagnostic specifically for chosen topic across difficulty levels (20% MC, 80% Non-MC)
+      let idx = 0;
       for (let g = targetGrade - 1; g <= targetGrade + 2; g++) {
         const gradeLevel = Math.min(9, Math.max(4, g));
-        const q = AdaptiveEngine.getAdaptiveQuestionForTopic(selectedTopicId, gradeLevel, usedIds);
+        const q = AdaptiveEngine.getAdaptiveQuestionForTopic(selectedTopicId, gradeLevel, usedIds, undefined, idx++);
         usedIds.push(q.id);
         qList.push(q);
       }

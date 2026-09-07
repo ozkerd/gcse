@@ -327,7 +327,7 @@ export class UserStore {
     });
   }
 
-  private static CURRENT_CACHE_VERSION = 'v4_interleaved_20_80';
+  private static CURRENT_CACHE_VERSION = 'v5_strict_20_80_pacing';
 
   static getStoredQuestions(): SeedQuestion[] {
     const raw = getCookie('gcse_stored_questions');
@@ -337,6 +337,7 @@ export class UserStore {
     if (cacheVer !== UserStore.CURRENT_CACHE_VERSION) {
       if (typeof document !== 'undefined') {
         document.cookie = 'gcse_stored_questions=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
+        document.cookie = 'gcse_answered_questions=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
         setCookie('gcse_cache_ver', UserStore.CURRENT_CACHE_VERSION);
       }
       return [];

@@ -36,10 +36,12 @@ function PracticeContent() {
 
   const [activeTopicId, setActiveTopicId] = useState<string>(initialTopicId);
   
+  const [sessionIndex, setSessionIndex] = useState<number>(0);
+
   const getInitialQuestion = (): SeedQuestion => {
     const session = UserStore.getSession();
     const baseGrade = session.targetGrade || 6;
-    return AdaptiveEngine.getAdaptiveQuestionForTopic(initialTopicId, baseGrade);
+    return AdaptiveEngine.getAdaptiveQuestionForTopic(initialTopicId, baseGrade, [], undefined, 0);
   };
 
   const [currentQuestion, setCurrentQuestion] = useState<SeedQuestion>(getInitialQuestion);
@@ -67,7 +69,8 @@ function PracticeContent() {
     const answeredIds = UserStore.getAnsweredQuestionIds();
     const excludeList = Array.from(new Set([...askedIds, ...answeredIds]));
 
-    const q = AdaptiveEngine.getAdaptiveQuestionForTopic(targetId, currentGrade, excludeList, subtopicParam);
+    setSessionIndex(0);
+    const q = AdaptiveEngine.getAdaptiveQuestionForTopic(targetId, currentGrade, excludeList, subtopicParam, 0);
     setCurrentQuestion(q);
     setAskedIds(prev => [...prev, q.id]);
     setSelectedOption(null);
@@ -113,8 +116,11 @@ function PracticeContent() {
     const answeredIds = UserStore.getAnsweredQuestionIds();
     const excludeList = Array.from(new Set([...askedIds, ...answeredIds, currentQuestion.id]));
 
-    // Load next adaptive question for topic ensuring anti-repetition & option shuffling
-    const nextQ = AdaptiveEngine.getAdaptiveQuestionForTopic(activeTopicId, nextGrade, excludeList, subtopicParam);
+    const nextIndex = sessionIndex + 1;
+    setSessionIndex(nextIndex);
+
+    // Load next adaptive question for topic with strict 20/80 sequence pacing
+    const nextQ = AdaptiveEngine.getAdaptiveQuestionForTopic(activeTopicId, nextGrade, excludeList, subtopicParam, nextIndex);
     setAskedIds(prev => [...prev, nextQ.id]);
     setCurrentQuestion(nextQ);
     setLoadingNewQuestion(false);

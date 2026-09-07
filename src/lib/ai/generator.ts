@@ -129,7 +129,8 @@ Format requirement: Respond ONLY with a valid raw JSON object (no markdown quote
     topicId: string,
     targetGrade: number = 6,
     excludeIds: string[] = [],
-    subtopicId?: string
+    subtopicId?: string,
+    targetType?: 'multiple_choice' | 'numerical' | 'short_answer' | 'fill_in_blank'
   ): SeedQuestion {
     const topic = GCSE_TOPICS.find(t => t.id === topicId) || GCSE_TOPICS[0];
     const timestamp = Date.now() + Math.floor(Math.random() * 100000);
@@ -1295,6 +1296,14 @@ Format requirement: Respond ONLY with a valid raw JSON object (no markdown quote
         matchingTopicSeeds = subMatches;
       }
     }
+    if (targetType) {
+      const typeMatches = matchingTopicSeeds.filter(q => q.questionType === targetType);
+      if (typeMatches.length > 0) matchingTopicSeeds = typeMatches;
+      else if (targetType !== 'multiple_choice') {
+        const nonMc = matchingTopicSeeds.filter(q => q.questionType !== 'multiple_choice');
+        if (nonMc.length > 0) matchingTopicSeeds = nonMc;
+      }
+    }
     if (matchingTopicSeeds.length > 0) {
       const base = matchingTopicSeeds[Math.floor(Math.random() * matchingTopicSeeds.length)];
       return shuffleQuestionOptions({ ...base });
@@ -1306,6 +1315,14 @@ Format requirement: Respond ONLY with a valid raw JSON object (no markdown quote
       const subMatches = allTopicSeeds.filter(q => q.subtopicId === subtopicId || q.subtopicName?.toLowerCase() === subtopicId.toLowerCase());
       if (subMatches.length > 0) {
         allTopicSeeds = subMatches;
+      }
+    }
+    if (targetType) {
+      const typeMatches = allTopicSeeds.filter(q => q.questionType === targetType);
+      if (typeMatches.length > 0) allTopicSeeds = typeMatches;
+      else if (targetType !== 'multiple_choice') {
+        const nonMc = allTopicSeeds.filter(q => q.questionType !== 'multiple_choice');
+        if (nonMc.length > 0) allTopicSeeds = nonMc;
       }
     }
     if (allTopicSeeds.length > 0) {

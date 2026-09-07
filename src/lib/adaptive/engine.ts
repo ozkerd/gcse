@@ -85,12 +85,15 @@ export class AdaptiveEngine {
    * Selects or procedurally generates an adaptive question tailored to student level.
    * GUARANTEES strict subject matching (Maths -> Maths only, Physics -> Physics only).
    * GUARANTEES that options contain the exact correct answer.
+   * STRICTLY ENFORCES 20% Multiple Choice / 80% Non-MC (numerical, short_answer, fill_in_blank) pacing.
    */
   static getAdaptiveQuestionForTopic(
     topicId: string,
     currentGradeLevel: number = 4,
     excludeIds: string[] = [],
-    subtopicId?: string
+    subtopicId?: string,
+    sessionQuestionIndex?: number,
+    preferredType?: 'multiple_choice' | 'numerical' | 'short_answer' | 'fill_in_blank'
   ): SeedQuestion {
     // 1. Check for matching seed questions for exact topicId that haven't been asked in this session
     let unusedTopicQuestions = INITIAL_SEED_QUESTIONS.filter(
@@ -107,15 +110,55 @@ export class AdaptiveEngine {
       }
     }
 
+    // Determine target question type according to authentic 20/80 GCSE exam simulation pacing
+    // In every 5 questions: Questions 1, 2, 3, 4 are Non-MC (80%), Question 5 is Multiple Choice (20%).
+    let targetType = preferredType;
+    if (!targetType && sessionQuestionIndex !== undefined) {
+      const blockIndex = sessionQuestionIndex % 5;
+      if (blockIndex === 4) {
+        targetType = 'multiple_choice';
+      } else if (blockIndex === 0) {
+        targetType = 'numerical';
+      } else if (blockIndex === 1) {
+        targetType = 'short_answer';
+      } else if (blockIndex === 2) {
+        targetType = 'fill_in_blank';
+      } else {
+        targetType = 'numerical';
+      }
+    } else if (!targetType) {
+      // If no index passed, prevent consecutive MC by inspecting the last question
+      const lastId = excludeIds[excludeIds.length - 1];
+      const lastQ = INITIAL_SEED_QUESTIONS.find(q => q.id === lastId);
+      if (lastQ && lastQ.questionType === 'multiple_choice') {
+        targetType = 'numerical';
+      }
+    }
+
     if (unusedTopicQuestions.length > 0) {
-      const minDiff = Math.min(...unusedTopicQuestions.map(q => Math.abs(q.gradeLevel - currentGradeLevel)));
-      const candidatePool = unusedTopicQuestions.filter(q => Math.abs(q.gradeLevel - currentGradeLevel) <= Math.max(minDiff, 1));
+      // Filter candidate pool by targetType or non-MC category
+      let typePool = unusedTopicQuestions;
+      if (targetType) {
+        const exactMatches = unusedTopicQuestions.filter(q => q.questionType === targetType);
+        if (exactMatches.length > 0) {
+          typePool = exactMatches;
+        } else if (targetType !== 'multiple_choice') {
+          // Fallback to any non-MC (e.g. for humanities without numerical questions)
+          const nonMcMatches = unusedTopicQuestions.filter(q => q.questionType !== 'multiple_choice');
+          if (nonMcMatches.length > 0) {
+            typePool = nonMcMatches;
+          }
+        }
+      }
+
+      const minDiff = Math.min(...typePool.map(q => Math.abs(q.gradeLevel - currentGradeLevel)));
+      const candidatePool = typePool.filter(q => Math.abs(q.gradeLevel - currentGradeLevel) <= Math.max(minDiff, 1));
       const chosen = candidatePool[Math.floor(Math.random() * candidatePool.length)];
       return shuffleQuestionOptions(chosen);
     }
 
     // 2. Delegate to strictly subject-aware procedural generator in AIGenerator
-    return AIGenerator.generateQuestionSync(topicId, currentGradeLevel, excludeIds, subtopicId);
+    return AIGenerator.generateQuestionSync(topicId, currentGradeLevel, excludeIds, subtopicId, targetType);
   }
 
   /**
@@ -148,51 +191,61 @@ export class AdaptiveEngine {
     const mcPool = pool.filter(q => q.questionType === 'multiple_choice').sort(() => 0.5 - Math.random());
     const nonMcPool = pool.filter(q => q.questionType !== 'multiple_choice').sort(() => 0.5 - Math.random());
 
-    const results: SeedQuestion[] = [];
+    const mcResults: SeedQuestion[] = [];
+    const nonMcResults: SeedQuestion[] = [];
     const usedTopicIds = new Set<string>();
 
-    // 1. Pick Multiple Choice questions (distinct topics where possible)
-    for (const q of mcPool) {
-      if (results.filter(r => r.questionType === 'multiple_choice').length >= mcCount) break;
-      if (!usedTopicIds.has(q.topicId)) {
-        usedTopicIds.add(q.topicId);
-        results.push(shuffleQuestionOptions(q));
-      }
-    }
-
-    // 2. Pick Non-Multiple Choice questions (distinct topics where possible)
+    // 1. Pick Non-Multiple Choice questions (distinct topics where possible)
     for (const q of nonMcPool) {
-      if (results.filter(r => r.questionType !== 'multiple_choice').length >= nonMcCount) break;
+      if (nonMcResults.length >= nonMcCount) break;
       if (!usedTopicIds.has(q.topicId)) {
         usedTopicIds.add(q.topicId);
-        results.push(shuffleQuestionOptions(q));
+        nonMcResults.push(shuffleQuestionOptions(q));
       }
     }
 
     // Top up non-MC if topic constraint couldn't fill count
     for (const q of nonMcPool) {
-      if (results.filter(r => r.questionType !== 'multiple_choice').length >= nonMcCount) break;
-      if (!results.some(r => r.id === q.id)) {
-        results.push(shuffleQuestionOptions(q));
+      if (nonMcResults.length >= nonMcCount) break;
+      if (!nonMcResults.some(r => r.id === q.id)) {
+        nonMcResults.push(shuffleQuestionOptions(q));
+      }
+    }
+
+    // 2. Pick Multiple Choice questions (distinct topics where possible)
+    for (const q of mcPool) {
+      if (mcResults.length >= mcCount) break;
+      if (!usedTopicIds.has(q.topicId)) {
+        usedTopicIds.add(q.topicId);
+        mcResults.push(shuffleQuestionOptions(q));
       }
     }
 
     // Top up MC if needed
     for (const q of mcPool) {
-      if (results.length >= count) break;
-      if (!results.some(r => r.id === q.id)) {
-        results.push(shuffleQuestionOptions(q));
+      if (mcResults.length >= mcCount) break;
+      if (!mcResults.some(r => r.id === q.id)) {
+        mcResults.push(shuffleQuestionOptions(q));
       }
     }
 
-    // Fallback if count still not reached
-    while (results.length < count && pool.length > 0) {
-      const q = pool[results.length % pool.length];
-      results.push(shuffleQuestionOptions(q));
+    // Order results with Non-MC first and MC interspersed at the end of blocks:
+    // e.g. for count=5: 4 Non-MC followed by 1 MC (20% MC / 80% Non-MC)
+    const finalOrdered: SeedQuestion[] = [];
+    let mcIdx = 0;
+    let nonMcIdx = 0;
+
+    for (let i = 0; i < count; i++) {
+      if ((i % 5 === 4 || nonMcIdx >= nonMcResults.length) && mcIdx < mcResults.length) {
+        finalOrdered.push(mcResults[mcIdx++]);
+      } else if (nonMcIdx < nonMcResults.length) {
+        finalOrdered.push(nonMcResults[nonMcIdx++]);
+      } else if (mcIdx < mcResults.length) {
+        finalOrdered.push(mcResults[mcIdx++]);
+      }
     }
 
-    // Shuffle final results so MC isn't always in the same position
-    return results.sort(() => 0.5 - Math.random());
+    return finalOrdered;
   }
 
   /**

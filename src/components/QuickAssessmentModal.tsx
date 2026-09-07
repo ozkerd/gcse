@@ -53,9 +53,9 @@ export function QuickAssessmentModal({ isOpen, onClose }: QuickAssessmentModalPr
     const usedIds: string[] = [...answeredIds];
 
     if (mode === 'specific') {
-      // Pull unique adapted questions specifically for the selected topic
+      // Pull unique adapted questions specifically for the selected topic with strict 20/80 pacing
       for (let i = 0; i < 5; i++) {
-        const q = AdaptiveEngine.getAdaptiveQuestionForTopic(selectedTopicId, targetGrade, usedIds);
+        const q = AdaptiveEngine.getAdaptiveQuestionForTopic(selectedTopicId, targetGrade, usedIds, undefined, i);
         usedIds.push(q.id);
         qList.push({
           ...q,
