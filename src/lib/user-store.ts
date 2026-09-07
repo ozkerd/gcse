@@ -1,6 +1,6 @@
 'use client';
 
-import { SeedQuestion } from './curriculum/gcse-data';
+import { SeedQuestion, INITIAL_SEED_QUESTIONS } from './curriculum/gcse-data';
 
 export type UserRole = 'guest' | 'student' | 'parent';
 
@@ -316,11 +316,32 @@ export class UserStore {
     });
   }
 
+  private static CURRENT_CACHE_VERSION = 'v3_purge_clean';
+
   static getStoredQuestions(): SeedQuestion[] {
     const raw = getCookie('gcse_stored_questions');
+    const cacheVer = getCookie('gcse_cache_ver');
+
+    // Purge stale question cookies if version changed
+    if (cacheVer !== UserStore.CURRENT_CACHE_VERSION) {
+      if (typeof document !== 'undefined') {
+        document.cookie = 'gcse_stored_questions=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
+        setCookie('gcse_cache_ver', UserStore.CURRENT_CACHE_VERSION);
+      }
+      return [];
+    }
+
     if (raw) {
       try {
-        return JSON.parse(raw);
+        const parsed: SeedQuestion[] = JSON.parse(raw);
+        // Verify each stored question: if question ID exists in INITIAL_SEED_QUESTIONS, ensure topicId & text match!
+        return parsed.filter(q => {
+          const match = INITIAL_SEED_QUESTIONS.find(sq => sq.id === q.id);
+          if (match) {
+            return q.topicId === match.topicId && q.questionText === match.questionText;
+          }
+          return true; // Retain valid custom AI-generated questions
+        });
       } catch (e) {
         // ignore
       }
@@ -333,6 +354,7 @@ export class UserStore {
     if (!existing.some(q => q.id === question.id)) {
       const updated = [question, ...existing].slice(0, 100);
       setCookie('gcse_stored_questions', JSON.stringify(updated));
+      setCookie('gcse_cache_ver', UserStore.CURRENT_CACHE_VERSION);
     }
   }
 
