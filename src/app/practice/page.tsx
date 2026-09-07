@@ -37,6 +37,18 @@ function PracticeContent() {
   const [activeTopicId, setActiveTopicId] = useState<string>(initialTopicId);
   
   const [sessionIndex, setSessionIndex] = useState<number>(0);
+  const [selectedSubtopic, setSelectedSubtopic] = useState<string>(subtopicParam || '');
+  const [typeFilter, setTypeFilter] = useState<'all' | 'numerical' | 'short_answer' | 'fill_in_blank' | 'multiple_choice'>('all');
+
+  const topicSubtopics = React.useMemo(() => {
+    const map = new Map<string, string>();
+    INITIAL_SEED_QUESTIONS.filter(q => q.topicId === activeTopicId && q.subtopicId).forEach(q => {
+      if (q.subtopicId && !map.has(q.subtopicId)) {
+        map.set(q.subtopicId, q.subtopicName || q.subtopicId);
+      }
+    });
+    return Array.from(map.entries()).map(([id, name]) => ({ id, name }));
+  }, [activeTopicId]);
 
   const getInitialQuestion = (): SeedQuestion => {
     const session = UserStore.getSession();
@@ -55,10 +67,13 @@ function PracticeContent() {
 
   const [askedIds, setAskedIds] = useState<string[]>([]);
 
-  // Load adaptive question when activeTopicId or params change
+  // Load adaptive question when activeTopicId, subtopic, or typeFilter change
   useEffect(() => {
     const targetId = topicParam || initialTopicId;
     setActiveTopicId(targetId);
+    if (subtopicParam) {
+      setSelectedSubtopic(subtopicParam);
+    }
     
     const session = UserStore.getSession();
     const baseGrade = session.targetGrade || 6;
@@ -70,12 +85,13 @@ function PracticeContent() {
     const excludeList = Array.from(new Set([...askedIds, ...answeredIds]));
 
     setSessionIndex(0);
-    const q = AdaptiveEngine.getAdaptiveQuestionForTopic(targetId, currentGrade, excludeList, subtopicParam, 0);
+    const prefType = typeFilter !== 'all' ? typeFilter : undefined;
+    const q = AdaptiveEngine.getAdaptiveQuestionForTopic(targetId, currentGrade, excludeList, selectedSubtopic || subtopicParam || undefined, 0, prefType);
     setCurrentQuestion(q);
     setAskedIds(prev => [...prev, q.id]);
     setSelectedOption(null);
     setHasSubmitted(false);
-  }, [subjectParam, topicParam, subtopicParam, searchQueryParam]);
+  }, [subjectParam, topicParam, subtopicParam, searchQueryParam, selectedSubtopic, typeFilter]);
 
   const currentTopic = GCSE_TOPICS.find(t => t.id === activeTopicId) || GCSE_TOPICS[0];
 
@@ -119,8 +135,9 @@ function PracticeContent() {
     const nextIndex = sessionIndex + 1;
     setSessionIndex(nextIndex);
 
-    // Load next adaptive question for topic with strict 20/80 sequence pacing
-    const nextQ = AdaptiveEngine.getAdaptiveQuestionForTopic(activeTopicId, nextGrade, excludeList, subtopicParam, nextIndex);
+    const prefType = typeFilter !== 'all' ? typeFilter : undefined;
+    // Load next adaptive question for topic with strict 20/80 sequence pacing or requested type
+    const nextQ = AdaptiveEngine.getAdaptiveQuestionForTopic(activeTopicId, nextGrade, excludeList, selectedSubtopic || undefined, nextIndex, prefType);
     setAskedIds(prev => [...prev, nextQ.id]);
     setCurrentQuestion(nextQ);
     setLoadingNewQuestion(false);
@@ -135,7 +152,7 @@ function PracticeContent() {
           <div>
             <div className="flex items-center gap-2 text-xs font-bold text-indigo-600 uppercase tracking-wider">
               <Sparkles className="w-4 h-4 text-yellow-500" />
-              Adaptive AI Question Engine (20/80 Exam Simulation)
+              Adaptive AI Question Engine (20% MC / 80% Calculations & Written)
             </div>
             <h1 className="text-xl sm:text-2xl font-extrabold text-slate-900 mt-0.5">
               {currentTopic.topicName}
@@ -154,6 +171,50 @@ function PracticeContent() {
                 {totalAttempts > 0 ? Math.round((scoreCount / totalAttempts) * 100) : 100}% ({scoreCount}/{totalAttempts})
               </span>
             </div>
+          </div>
+        </div>
+
+        {/* Subtopic Selector & Question Type Toolbar */}
+        <div className="pt-2 border-t border-slate-100 flex flex-col md:flex-row md:items-center justify-between gap-3">
+          {/* Subtopic Dropdown */}
+          <div className="flex items-center gap-2 flex-1">
+            <span className="text-xs font-bold text-slate-600 whitespace-nowrap">🎯 Subtopic:</span>
+            <select
+              value={selectedSubtopic}
+              onChange={(e) => setSelectedSubtopic(e.target.value)}
+              className="w-full text-xs font-semibold p-2 rounded-xl border border-slate-200 bg-slate-50 text-slate-800 focus:ring-2 focus:ring-indigo-500"
+            >
+              <option value="">All 10 Subtopics (Adaptive Curriculum)</option>
+              {topicSubtopics.map(sub => (
+                <option key={sub.id} value={sub.id}>
+                  {sub.name}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {/* Format Filter Buttons */}
+          <div className="flex flex-wrap items-center gap-1.5">
+            <span className="text-[11px] font-bold text-slate-500 uppercase mr-1">Format:</span>
+            {[
+              { id: 'all', label: '🎯 20/80 Ratio' },
+              { id: 'numerical', label: '🔢 Numerical' },
+              { id: 'short_answer', label: '✍️ Written' },
+              { id: 'fill_in_blank', label: '📝 Fill Blank' },
+              { id: 'multiple_choice', label: '🔘 MC Only' },
+            ].map(tab => (
+              <button
+                key={tab.id}
+                onClick={() => setTypeFilter(tab.id as any)}
+                className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all ${
+                  typeFilter === tab.id
+                    ? 'bg-indigo-600 text-white shadow-sm'
+                    : 'bg-slate-100 hover:bg-slate-200 text-slate-600'
+                }`}
+              >
+                {tab.label}
+              </button>
+            ))}
           </div>
         </div>
 
