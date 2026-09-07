@@ -111,7 +111,9 @@ export class AdaptiveEngine {
       const sorted = [...unusedTopicQuestions].sort(
         (a, b) => Math.abs(a.gradeLevel - currentGradeLevel) - Math.abs(b.gradeLevel - currentGradeLevel)
       );
-      const chosen = sorted[Math.floor(Math.random() * Math.min(sorted.length, 2))];
+      // Pick randomly from the top 10 grade-matched questions to guarantee 20/80 multi-type question variety
+      const candidatePool = sorted.slice(0, Math.min(sorted.length, 10));
+      const chosen = candidatePool[Math.floor(Math.random() * candidatePool.length)];
       return shuffleQuestionOptions({
         ...chosen,
         gradeLevel: currentGradeLevel,

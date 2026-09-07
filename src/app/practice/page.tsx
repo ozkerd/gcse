@@ -37,8 +37,7 @@ function PracticeContent() {
   const [activeTopicId, setActiveTopicId] = useState<string>(initialTopicId);
   
   const getInitialQuestion = (): SeedQuestion => {
-    const matchedSeeds = INITIAL_SEED_QUESTIONS.filter(q => q.topicId === initialTopicId);
-    return matchedSeeds.length > 0 ? matchedSeeds[0] : AdaptiveEngine.getAdaptiveQuestionForTopic(initialTopicId);
+    return AdaptiveEngine.getAdaptiveQuestionForTopic(initialTopicId);
   };
 
   const [currentQuestion, setCurrentQuestion] = useState<SeedQuestion>(getInitialQuestion);
