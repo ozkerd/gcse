@@ -1265,7 +1265,7 @@ Format requirement: Respond ONLY with a valid raw JSON object (no markdown quote
 
 
     // -------------------------------------------------------------
-    // 6. STRICT SUBJECT & TOPIC SEED MATCHING (NO MIXING!)
+    // 6. STRICT TOPIC-BOUND SEED & FALLBACK ENGINE (NO CROSS-TOPIC LEAKAGE!)
     // -------------------------------------------------------------
     const matchingTopicSeeds = INITIAL_SEED_QUESTIONS.filter(q => q.topicId === topicId && !excludeIds.includes(q.id));
     if (matchingTopicSeeds.length > 0) {
@@ -1273,32 +1273,34 @@ Format requirement: Respond ONLY with a valid raw JSON object (no markdown quote
       return shuffleQuestionOptions({ ...base });
     }
 
-    const subjectSeeds = INITIAL_SEED_QUESTIONS.filter(q => {
-      const t = GCSE_TOPICS.find(top => top.id === q.topicId);
-      return t?.subjectId === topic.subjectId && !excludeIds.includes(q.id);
-    });
-
-    if (subjectSeeds.length > 0) {
-      const base = subjectSeeds[Math.floor(Math.random() * subjectSeeds.length)];
+    // Allow cycling back through topic's own seeds if all have been excluded in current session
+    const allTopicSeeds = INITIAL_SEED_QUESTIONS.filter(q => q.topicId === topicId);
+    if (allTopicSeeds.length > 0) {
+      const base = allTopicSeeds[Math.floor(Math.random() * allTopicSeeds.length)];
       return shuffleQuestionOptions({ ...base });
     }
 
-    // Emergency Topic-Matched Fallback
-    const fallbackAns = '$x = -2$ or $x = -5$';
+    // Topic-Specific Emergency Fallback (Guaranteed 100% Subject & Topic Bound)
+    const fallbackAns = `Core principle of ${topic.topicName}`;
     return shuffleQuestionOptions({
       id: `emerg-${topic.id}-${timestamp}`,
       topicId: topic.id,
       gradeLevel: targetGrade,
-      questionText: `[${topic.topicName}] Solve the algebraic equation $x^2 + 7x + 10 = 0$.`,
+      questionText: `In GCSE ${topic.subjectId.toUpperCase()} (${topic.topicName}), what key concept defines ${topic.unitName}?`,
       questionType: 'multiple_choice',
-      options: [fallbackAns, '$x = 2$ or $x = 5$', '$x = -7$ or $x = 10$', '$x = -1$ or $x = -10$'],
+      options: [
+        fallbackAns,
+        `Distractor option A for ${topic.topicName}`,
+        `Alternative distractor B for ${topic.unitName}`,
+        `Incorrect distractor C`
+      ],
       correctAnswer: fallbackAns,
       explanation: {
-        overview: 'Factorise into $(x + 2)(x + 5) = 0$.',
-        stepByStep: ['Set $x + 2 = 0 \\implies x = -2$', 'Set $x + 5 = 0 \\implies x = -5$'],
-        keyConcept: 'Quadratic factorisation.',
-        commonMistakes: ['Sign errors when solving.'],
-        examTip: 'Check your roots.'
+        overview: `Core conceptual review for ${topic.topicName} in ${topic.unitName}.`,
+        stepByStep: [`Apply key specification guidelines for ${topic.topicName}.`],
+        keyConcept: `${topic.topicName} principles.`,
+        commonMistakes: ['Confusing core definitions.'],
+        examTip: 'Review mark schemes and key terms.'
       }
     });
   }
