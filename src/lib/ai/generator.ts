@@ -1404,3 +1404,159 @@ Format requirement: Respond ONLY with a valid raw JSON object (no markdown quote
     return questions;
   }
 }
+
+export class QuestionVariator {
+  /**
+   * Mutates question parameters dynamically for numerical/formula questions.
+   */
+  static mutateParameters(q: SeedQuestion): SeedQuestion {
+    if (q.questionType !== 'numerical' && !q.questionText.includes('$')) {
+      return q;
+    }
+
+    const copy: SeedQuestion = JSON.parse(JSON.stringify(q));
+    copy.id = `${q.id}-var-${Math.floor(Math.random() * 10000)}`;
+
+    const numRegex = /\b(\d+)\b/g;
+    const matches = Array.from(q.questionText.matchAll(numRegex));
+    if (matches.length > 0) {
+      const factor = [2, 3, 5][Math.floor(Math.random() * 3)];
+
+      copy.questionText = q.questionText.replace(/\b(\d+)\b/g, (match) => {
+        const val = parseInt(match, 10);
+        if (val > 1 && val < 500) {
+          return (val * factor).toString();
+        }
+        return match;
+      });
+
+      const cleanAns = q.correctAnswer.replace(/[\$\s\\text\{\}]/g, '');
+      const oldNum = parseFloat(cleanAns);
+      if (!isNaN(oldNum)) {
+        const newNum = Math.round(oldNum * factor * 100) / 100;
+        copy.correctAnswer = `${newNum}`;
+        copy.acceptableAnswers = [
+          `${newNum}`,
+          `${newNum}.0`,
+          `${newNum.toFixed(1)}`,
+        ];
+      }
+    }
+
+    return copy;
+  }
+
+  /**
+   * Dynamically converts a question between question types for cross-verification.
+   */
+  static convertType(
+    q: SeedQuestion,
+    targetType: 'multiple_choice' | 'fill_in_blank' | 'short_answer' | 'numerical'
+  ): SeedQuestion {
+    const copy: SeedQuestion = JSON.parse(JSON.stringify(q));
+    copy.questionType = targetType;
+    copy.id = `${q.id}-conv-${targetType}-${Math.floor(Math.random() * 1000)}`;
+
+    if (targetType === 'multiple_choice') {
+      if (!copy.options || copy.options.length < 4) {
+        const clean = q.correctAnswer.replace(/[\$]/g, '').trim() || q.correctAnswer;
+        copy.options = [
+          q.correctAnswer,
+          `Alternative formulation of ${clean}`,
+          `Simplified ${clean} value`,
+          `Incorrect variation of ${clean}`
+        ];
+      }
+      return shuffleQuestionOptions(copy);
+    } else {
+      delete copy.options;
+      if (targetType === 'fill_in_blank') {
+        copy.fillInTemplate = copy.fillInTemplate || `Complete: ${q.questionText} → _____`;
+      } else if (targetType === 'numerical') {
+        copy.numericalTolerance = copy.numericalTolerance ?? 0.05;
+      }
+      return copy;
+    }
+  }
+
+  /**
+   * Generates a cross-verification challenge question to test conceptual mastery.
+   */
+  static crossVerify(q: SeedQuestion): SeedQuestion {
+    if (q.questionType === 'multiple_choice') {
+      const isNum = !isNaN(parseFloat(q.correctAnswer.replace(/[\$\text\{\}]/g, '')));
+      const targetType = isNum ? 'numerical' : 'fill_in_blank';
+      return QuestionVariator.convertType(q, targetType);
+    } else {
+      return QuestionVariator.mutateParameters(q);
+    }
+  }
+}
+
+/**
+ * Universal answer validation engine supporting multiple_choice, fill_in_blank, short_answer, and numerical.
+ */
+export function validateAnswer(question: SeedQuestion, userAnswer: string): { isCorrect: boolean; feedback: string } {
+  if (!userAnswer || !userAnswer.trim()) {
+    return { isCorrect: false, feedback: 'Please provide an answer before submitting.' };
+  }
+
+  const userTrim = userAnswer.trim().toLowerCase();
+
+  // 1. Multiple Choice
+  if (question.questionType === 'multiple_choice') {
+    const isOk = userAnswer === question.correctAnswer || userTrim === (question.correctAnswer || '').trim().toLowerCase();
+    return {
+      isCorrect: isOk,
+      feedback: isOk ? 'Correct answer!' : `Incorrect. The correct option is: ${question.correctAnswer}`
+    };
+  }
+
+  const correctTrim = (question.correctAnswer || '').trim().toLowerCase();
+  const acceptableList = (question.acceptableAnswers || [question.correctAnswer]).map(a => a.trim().toLowerCase());
+
+  // 2. Direct string or acceptable answer match
+  if (userTrim === correctTrim || acceptableList.includes(userTrim)) {
+    return { isCorrect: true, feedback: 'Correct answer!' };
+  }
+
+  // 3. Numerical comparison with tolerance
+  if (question.questionType === 'numerical' || !isNaN(parseFloat(userTrim))) {
+    const userNum = parseFloat(userTrim);
+    const cleanCorrect = correctTrim.replace(/[^0-9\.\-]/g, '');
+    const correctNum = parseFloat(cleanCorrect);
+
+    if (!isNaN(userNum) && !isNaN(correctNum)) {
+      const tol = question.numericalTolerance ?? 0.05;
+      if (Math.abs(userNum - correctNum) <= tol) {
+        return { isCorrect: true, feedback: `Correct! Value within tolerance (${correctNum} ± ${tol}).` };
+      }
+    }
+  }
+
+  // 4. Normalized comparison (stripping symbols $, %, whitespace, punctuation)
+  const clean = (s: string) => s.replace(/[\$\,\%\s\.\-\_\(\)]/g, '').toLowerCase();
+  const cleanUser = clean(userAnswer);
+  if (cleanUser === clean(question.correctAnswer) || acceptableList.some(a => clean(a) === cleanUser)) {
+    return { isCorrect: true, feedback: 'Correct answer!' };
+  }
+
+  // 5. Short Answer keyword matching
+  if (question.questionType === 'short_answer') {
+    const keywords = (question.acceptableAnswers || [question.correctAnswer])
+      .flatMap(a => a.toLowerCase().split(/[\s,\.\/\;\:]+/))
+      .filter(w => w.length > 3 && !['what', 'that', 'with', 'from', 'this', 'have', 'were', 'been'].includes(w));
+
+    if (keywords.length > 0) {
+      const matched = keywords.filter(kw => userTrim.includes(kw));
+      if (matched.length / keywords.length >= 0.4 || matched.length >= 2) {
+        return { isCorrect: true, feedback: 'Correct! Key terms identified cleanly.' };
+      }
+    }
+  }
+
+  return {
+    isCorrect: false,
+    feedback: `Incorrect. Expected answer: ${question.correctAnswer}`
+  };
+}

@@ -2,14 +2,14 @@
 
 import React, { useState, useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
-import { Sparkles, HelpCircle, CheckCircle2, XCircle, ArrowRight, Lightbulb, RefreshCw, Award, Search } from 'lucide-react';
-import { INITIAL_SEED_QUESTIONS, SeedQuestion, GCSE_TOPICS, GCSE_SUBJECTS } from '@/lib/curriculum/gcse-data';
-import { KaTeXRenderer } from '@/components/KaTeXRenderer';
-import { AIGenerator, DeepExplanationResult } from '@/lib/ai/generator';
+import { Sparkles, Award } from 'lucide-react';
+import { INITIAL_SEED_QUESTIONS, SeedQuestion, GCSE_TOPICS } from '@/lib/curriculum/gcse-data';
+import { AIGenerator, DeepExplanationResult, validateAnswer } from '@/lib/ai/generator';
 import { DeepExplanationModal } from '@/components/DeepExplanationModal';
 import { UserStore } from '@/lib/user-store';
 import { AdaptiveEngine } from '@/lib/adaptive/engine';
 import { SearchBar } from '@/components/SearchBar';
+import { QuestionCard } from '@/components/QuestionCard';
 
 function PracticeContent() {
   const searchParams = useSearchParams();
@@ -72,14 +72,14 @@ function PracticeContent() {
   }, [subjectParam, topicParam, subtopicParam, searchQueryParam]);
 
   const currentTopic = GCSE_TOPICS.find(t => t.id === activeTopicId) || GCSE_TOPICS[0];
-  const isCorrect = selectedOption === currentQuestion.correctAnswer;
 
   const handleSubmit = () => {
     if (!selectedOption || hasSubmitted) return;
     setHasSubmitted(true);
     setTotalAttempts(prev => prev + 1);
     
-    const correct = selectedOption === currentQuestion.correctAnswer;
+    const evalRes = validateAnswer(currentQuestion, selectedOption);
+    const correct = evalRes.isCorrect;
     if (correct) {
       setScoreCount(prev => prev + 1);
     }
@@ -124,7 +124,7 @@ function PracticeContent() {
           <div>
             <div className="flex items-center gap-2 text-xs font-bold text-indigo-600 uppercase tracking-wider">
               <Sparkles className="w-4 h-4 text-yellow-500" />
-              Adaptive AI Question Engine
+              Adaptive AI Question Engine (20/80 Exam Simulation)
             </div>
             <h1 className="text-xl sm:text-2xl font-extrabold text-slate-900 mt-0.5">
               {currentTopic.topicName}
@@ -152,162 +152,19 @@ function PracticeContent() {
         </div>
       </div>
 
-      {/* Main Question Card */}
-      <div className="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200 shadow-md space-y-6">
-        
-        {/* Question Header & Grade Tag */}
-        <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 pb-4">
-          <div className="flex flex-wrap items-center gap-2">
-            <span className="px-3.5 py-1 bg-indigo-50 border border-indigo-200 text-indigo-800 rounded-full font-mono text-xs font-bold flex items-center gap-1.5">
-              <Sparkles className="w-3.5 h-3.5 text-yellow-500" />
-              Target Grade {currentQuestion.gradeLevel} Question
-            </span>
-            <span className="px-3 py-1 bg-purple-50 border border-purple-200 text-purple-900 rounded-full text-xs font-semibold flex items-center gap-1">
-              📜 {currentQuestion.examBoard || 'AQA'} {currentQuestion.paperYear || 2023} ({currentQuestion.paperName || 'Paper 1'})
-            </span>
-            {currentQuestion.subtopicName && (
-              <span className="px-3 py-1 bg-amber-50 border border-amber-200 text-amber-900 rounded-full text-xs font-semibold flex items-center gap-1">
-                🎯 {currentQuestion.subtopicName}
-              </span>
-            )}
-          </div>
-          <span className="text-xs font-semibold text-slate-400">ID: {currentQuestion.id}</span>
-        </div>
+      {/* Main Multi-Type Question Card */}
+      <QuestionCard
+        question={currentQuestion}
+        selectedAnswer={selectedOption}
+        onAnswerChange={setSelectedOption}
+        hasSubmitted={hasSubmitted}
+        onSubmit={handleSubmit}
+        onNext={handleNextQuestion}
+        onDeepAnalysis={handleOpenDeepAnalysis}
+        loading={loadingNewQuestion}
+      />
 
-        {/* Question Body */}
-        <div className="bg-slate-50/80 border border-slate-200/80 rounded-2xl p-5 sm:p-6">
-          <div className="text-base sm:text-lg font-bold text-slate-900 leading-relaxed">
-            <KaTeXRenderer content={currentQuestion.questionText} />
-          </div>
-        </div>
-
-        {/* Options */}
-        <div className="space-y-3">
-          {currentQuestion.options?.map((option, idx) => {
-            const isSelected = selectedOption === option;
-            let btnStyle = 'bg-white border-slate-200 hover:border-indigo-300 text-slate-800';
-
-            if (hasSubmitted) {
-              if (option === currentQuestion.correctAnswer) {
-                btnStyle = 'bg-emerald-50 border-emerald-500 text-emerald-950 font-bold ring-2 ring-emerald-500/20';
-              } else if (isSelected) {
-                btnStyle = 'bg-rose-50 border-rose-500 text-rose-950 font-bold ring-2 ring-rose-500/20';
-              }
-            } else if (isSelected) {
-              btnStyle = 'bg-indigo-50 border-indigo-500 text-indigo-950 font-semibold ring-2 ring-indigo-500/20';
-            }
-
-            return (
-              <button
-                key={idx}
-                disabled={hasSubmitted}
-                onClick={() => setSelectedOption(option)}
-                className={`w-full text-left p-4 rounded-2xl border-2 text-sm transition-all flex items-center justify-between ${btnStyle}`}
-              >
-                <div className="flex items-center gap-3">
-                  <span className="w-7 h-7 rounded-xl bg-slate-100 font-bold text-xs flex items-center justify-center shrink-0">
-                    {String.fromCharCode(65 + idx)}
-                  </span>
-                  <KaTeXRenderer content={option} />
-                </div>
-
-                {hasSubmitted && option === currentQuestion.correctAnswer && (
-                  <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0" />
-                )}
-                {hasSubmitted && isSelected && option !== currentQuestion.correctAnswer && (
-                  <XCircle className="w-5 h-5 text-rose-600 shrink-0" />
-                )}
-              </button>
-            );
-          })}
-        </div>
-
-        {/* Feedback / Result Banner */}
-        {hasSubmitted && (
-          <div className={`p-5 rounded-2xl border-2 flex flex-col sm:flex-row sm:items-center justify-between gap-4 ${
-            isCorrect ? 'bg-emerald-50/80 border-emerald-200 text-emerald-950' : 'bg-rose-50/80 border-rose-200 text-rose-950'
-          }`}>
-            <div className="flex items-center gap-3">
-              {isCorrect ? (
-                <CheckCircle2 className="w-7 h-7 text-emerald-600 shrink-0" />
-              ) : (
-                <XCircle className="w-7 h-7 text-rose-600 shrink-0" />
-              )}
-              <div>
-                <h4 className="font-bold text-base">
-                  {isCorrect ? 'Correct Answer! 🎉' : 'Nearly there! Review solution below.'}
-                </h4>
-                <p className="text-xs opacity-90 mt-0.5">
-                  {isCorrect
-                    ? 'Topic mastery increased! Answer 2 in a row correctly to unlock higher Grade questions.'
-                    : 'Reinforcing foundational concepts for this topic before promoting difficulty.'}
-                </p>
-              </div>
-            </div>
-
-            {/* Deep Analysis Button */}
-            <button
-              onClick={handleOpenDeepAnalysis}
-              className="inline-flex items-center gap-2 px-4 py-2.5 bg-yellow-400 hover:bg-yellow-500 text-slate-900 font-bold rounded-xl text-xs shadow-md transition-transform hover:scale-105 shrink-0"
-            >
-              <Lightbulb className="w-4 h-4 text-slate-900" />
-              <span>Deep Analysis & Hint</span>
-            </button>
-          </div>
-        )}
-
-        {/* Action Controls */}
-        <div className="flex items-center justify-between pt-4 border-t border-slate-100">
-          
-          {!hasSubmitted && (
-            <button
-              onClick={handleOpenDeepAnalysis}
-              className="inline-flex items-center gap-2 px-4 py-2.5 text-slate-600 hover:text-indigo-600 font-semibold text-xs transition-colors"
-            >
-              <HelpCircle className="w-4 h-4 text-indigo-500" />
-              <span>Request Hint & Formula Help</span>
-            </button>
-          )}
-
-          <div className="ml-auto flex gap-3">
-            {!hasSubmitted ? (
-              <button
-                onClick={handleSubmit}
-                disabled={!selectedOption}
-                className={`px-6 py-3 rounded-xl font-bold text-sm transition-all shadow-md ${
-                  selectedOption
-                    ? 'bg-indigo-600 hover:bg-indigo-700 text-white shadow-indigo-500/20'
-                    : 'bg-slate-200 text-slate-400 cursor-not-allowed'
-                }`}
-              >
-                Submit Answer
-              </button>
-            ) : (
-              <button
-                onClick={handleNextQuestion}
-                disabled={loadingNewQuestion}
-                className="inline-flex items-center gap-2 px-6 py-3 rounded-2xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-sm shadow-md transition-all"
-              >
-                {loadingNewQuestion ? (
-                  <>
-                    <RefreshCw className="w-4 h-4 animate-spin" />
-                    <span>Loading Adaptive Question...</span>
-                  </>
-                ) : (
-                  <>
-                    <span>Next Adaptive Question</span>
-                    <ArrowRight className="w-4 h-4" />
-                  </>
-                )}
-              </button>
-            )}
-          </div>
-
-        </div>
-
-      </div>
-
-      {/* Deep Explanation Modal */}
+      {/* Deep Solution Modal */}
       {deepAnalysisData && (
         <DeepExplanationModal
           isOpen={isModalOpen}
@@ -324,8 +181,8 @@ function PracticeContent() {
 export default function PracticePage() {
   return (
     <Suspense fallback={
-      <div className="p-8 text-center text-slate-500 font-medium">
-        Loading Question Engine...
+      <div className="p-8 text-center text-slate-500 font-bold">
+        Loading Adaptive Practice Engine...
       </div>
     }>
       <PracticeContent />

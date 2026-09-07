@@ -2,10 +2,11 @@
 
 import React, { useState } from 'react';
 import { Award, Clock, ArrowRight } from 'lucide-react';
-import { INITIAL_SEED_QUESTIONS, SeedQuestion } from '@/lib/curriculum/gcse-data';
-import { KaTeXRenderer } from '@/components/KaTeXRenderer';
+import { SeedQuestion } from '@/lib/curriculum/gcse-data';
 import { UserStore } from '@/lib/user-store';
 import { AdaptiveEngine } from '@/lib/adaptive/engine';
+import { validateAnswer } from '@/lib/ai/generator';
+import { QuestionCard } from '@/components/QuestionCard';
 import Link from 'next/link';
 
 export default function MockExamPage() {
@@ -37,14 +38,17 @@ export default function MockExamPage() {
     Object.keys(userAnswers).forEach(qId => {
       const q = mockQuestions.find(m => m.id === qId);
       if (q) {
-        UserStore.recordQuestionAttempt(userAnswers[qId] === q.correctAnswer, qId);
+        const isOk = validateAnswer(q, userAnswers[qId]).isCorrect;
+        UserStore.recordQuestionAttempt(isOk, qId);
       }
     });
   };
 
   let totalScore = 0;
   mockQuestions.forEach(q => {
-    if (userAnswers[q.id] === q.correctAnswer) totalScore += 10;
+    if (userAnswers[q.id] && validateAnswer(q, userAnswers[q.id]).isCorrect) {
+      totalScore += 10;
+    }
   });
 
   return (
@@ -55,7 +59,7 @@ export default function MockExamPage() {
         <div>
           <div className="inline-flex items-center gap-2 px-3 py-1 bg-purple-50 text-purple-700 rounded-full font-bold text-xs">
             <Award className="w-4 h-4 text-purple-600" />
-            Mock GCSE Exam Engine
+            Mock GCSE Exam Engine (20/80 Multi-Type Simulation)
           </div>
           <h1 className="text-2xl font-extrabold text-slate-900 mt-1">Realistic GCSE Mock Examination</h1>
           <p className="text-slate-500 text-sm">Timed mock papers modeled directly on AQA, Edexcel, and OCR specification standards.</p>
@@ -124,8 +128,8 @@ export default function MockExamPage() {
         </div>
       ) : !isExamSubmitted ? (
         /* Exam In-Progress Screen */
-        <div className="bg-white rounded-2xl p-6 sm:p-8 border border-slate-200 shadow-md space-y-6">
-          <div className="flex items-center justify-between border-b border-slate-100 pb-4">
+        <div className="space-y-6">
+          <div className="flex items-center justify-between bg-white p-4 rounded-2xl border border-slate-200">
             <span className="text-xs font-bold text-indigo-600 font-mono">
               {selectedBoard} {selectedSubject.toUpperCase()} Paper 1 — Question {currentIndex + 1} of {mockQuestions.length}
             </span>
@@ -135,30 +139,21 @@ export default function MockExamPage() {
             </div>
           </div>
 
-          <div className="bg-slate-50 border border-slate-200 rounded-xl p-5">
-            <div className="text-base sm:text-lg font-bold text-slate-900">
-              <KaTeXRenderer content={currentQ.questionText} />
-            </div>
-          </div>
+          <QuestionCard
+            question={currentQ}
+            selectedAnswer={userAnswers[currentQ.id] || null}
+            onAnswerChange={handleSelectAnswer}
+            hasSubmitted={false}
+            onSubmit={() => {
+              if (currentIndex + 1 < mockQuestions.length) {
+                setCurrentIndex(currentIndex + 1);
+              } else {
+                handleSubmitExam();
+              }
+            }}
+          />
 
-          <div className="space-y-3">
-            {currentQ.options?.map((opt, idx) => {
-              const isSelected = userAnswers[currentQ.id] === opt;
-              return (
-                <button
-                  key={idx}
-                  onClick={() => handleSelectAnswer(opt)}
-                  className={`w-full text-left p-4 rounded-xl border text-sm font-medium transition-all ${
-                    isSelected ? 'bg-indigo-50 border-indigo-500 font-bold text-indigo-950 ring-2 ring-indigo-500/20' : 'bg-white border-slate-200 text-slate-800'
-                  }`}
-                >
-                  <KaTeXRenderer content={opt} />
-                </button>
-              );
-            })}
-          </div>
-
-          <div className="flex items-center justify-between pt-4 border-t border-slate-100">
+          <div className="flex items-center justify-between pt-2">
             <button
               onClick={() => setCurrentIndex(Math.max(0, currentIndex - 1))}
               disabled={currentIndex === 0}

@@ -5,7 +5,9 @@ import { Target, CheckCircle2, ArrowRight, Award, Sparkles, GraduationCap, Filte
 import { INITIAL_SEED_QUESTIONS, SeedQuestion, GCSE_TOPICS, GCSE_SUBJECTS } from '@/lib/curriculum/gcse-data';
 import { KaTeXRenderer } from '@/components/KaTeXRenderer';
 import { AdaptiveEngine, DiagnosticResult } from '@/lib/adaptive/engine';
+import { validateAnswer } from '@/lib/ai/generator';
 import { UserStore } from '@/lib/user-store';
+import { QuestionCard } from '@/components/QuestionCard';
 import Link from 'next/link';
 
 export default function DiagnosticPage() {
@@ -62,7 +64,7 @@ export default function DiagnosticPage() {
   const handleNext = () => {
     if (!selectedOption || !currentQuestion) return;
 
-    const isCorrect = selectedOption === currentQuestion.correctAnswer;
+    const isCorrect = validateAnswer(currentQuestion, selectedOption).isCorrect;
     const newAttempts = [...attempts, { questionGrade: currentQuestion.gradeLevel, isCorrect, topicId: currentQuestion.topicId }];
     setAttempts(newAttempts);
 
@@ -219,10 +221,9 @@ export default function DiagnosticPage() {
           </button>
         </div>
       ) : step === 'test' && currentQuestion ? (
-        <div className="bg-white rounded-2xl p-6 sm:p-8 border border-slate-200 shadow-md space-y-6">
-          
+        <div className="space-y-6">
           {/* Progress Bar */}
-          <div className="space-y-2">
+          <div className="bg-white p-4 rounded-2xl border border-slate-200 space-y-2">
             <div className="flex justify-between text-xs font-bold text-slate-500">
               <span>Question {currentIndex + 1} of {questions.length} • Year {selectedYear}</span>
               <span className="text-indigo-600">Target Difficulty: Grade {currentQuestion.gradeLevel}</span>
@@ -235,62 +236,13 @@ export default function DiagnosticPage() {
             </div>
           </div>
 
-          {/* Question Text */}
-          <div className="bg-slate-50 border border-slate-200/80 rounded-xl p-5">
-            <div className="flex flex-wrap items-center gap-2 mb-3">
-              <span className="inline-block px-2.5 py-1 bg-indigo-100 text-indigo-800 rounded font-mono text-[11px] font-bold">
-                GCSE Level {currentQuestion.gradeLevel} Question
-              </span>
-              <span className="inline-block px-2.5 py-1 bg-purple-100 text-purple-900 rounded font-mono text-[11px] font-bold">
-                📜 {currentQuestion.examBoard || 'AQA'} {currentQuestion.paperYear || 2023} ({currentQuestion.paperName || 'Paper 1'})
-              </span>
-            </div>
-            <div className="text-base sm:text-lg font-bold text-slate-900 leading-relaxed">
-              <KaTeXRenderer content={currentQuestion.questionText} />
-            </div>
-          </div>
-
-          {/* Options */}
-          <div className="space-y-3">
-            {currentQuestion.options?.map((option, idx) => {
-              const isSelected = selectedOption === option;
-              return (
-                <button
-                  key={idx}
-                  onClick={() => setSelectedOption(option)}
-                  className={`w-full text-left p-4 rounded-xl border text-sm font-medium transition-all flex items-center justify-between ${
-                    isSelected
-                      ? 'bg-indigo-50 border-indigo-500 text-indigo-950 font-semibold shadow-sm ring-2 ring-indigo-500/20'
-                      : 'bg-white border-slate-200 hover:border-indigo-300 text-slate-800'
-                  }`}
-                >
-                  <KaTeXRenderer content={option} />
-                  <div className={`w-5 h-5 rounded-full border flex items-center justify-center ${
-                    isSelected ? 'border-indigo-600 bg-indigo-600 text-white' : 'border-slate-300'
-                  }`}>
-                    {isSelected && <CheckCircle2 className="w-4 h-4" />}
-                  </div>
-                </button>
-              );
-            })}
-          </div>
-
-          {/* Next Button */}
-          <div className="flex justify-end pt-4 border-t border-slate-100">
-            <button
-              onClick={handleNext}
-              disabled={!selectedOption}
-              className={`inline-flex items-center gap-2 px-6 py-3 rounded-xl font-bold text-sm transition-all shadow-md ${
-                selectedOption
-                  ? 'bg-indigo-600 hover:bg-indigo-700 text-white shadow-indigo-500/20'
-                  : 'bg-slate-200 text-slate-400 cursor-not-allowed'
-              }`}
-            >
-              <span>{currentIndex + 1 === questions.length ? 'Complete Assessment' : 'Next Question'}</span>
-              <ArrowRight className="w-4 h-4" />
-            </button>
-          </div>
-
+          <QuestionCard
+            question={currentQuestion}
+            selectedAnswer={selectedOption}
+            onAnswerChange={setSelectedOption}
+            hasSubmitted={false}
+            onSubmit={handleNext}
+          />
         </div>
       ) : step === 'results' ? (
         /* Result Screen */
