@@ -2,7 +2,7 @@
 
 /**
  * Cloudflare Email Service Module
- * Dispatches HTML notifications from noreply@primerllm.com
+ * Dispatches HTML notifications from noreply@btpsec.com
  */
 export interface EmailPayload {
   to: string;
@@ -12,7 +12,7 @@ export interface EmailPayload {
 }
 
 export class EmailService {
-  private static FROM_EMAIL = 'noreply@primerllm.com';
+  private static FROM_EMAIL = 'noreply@btpsec.com';
 
   /**
    * Dispatches email via Cloudflare Pages API endpoint or simulated client transport
@@ -50,7 +50,7 @@ export class EmailService {
   }
 
   /**
-   * Send 100% Topic Mastery Alert to Parent from noreply@primerllm.com
+   * Send 100% Topic Mastery Alert to Parent from noreply@btpsec.com
    */
   static async sendParentMasteryNotification(
     parentEmail: string,
@@ -84,7 +84,7 @@ export class EmailService {
         </ul>
 
         <div style="text-align: center; margin-top: 32px; pt-24 border-top: 1px solid #f1f5f9;">
-          <p style="color: #94a3b8; font-size: 12px;">Sent automatically by Cloudflare Email Routing from noreply@primerllm.com</p>
+          <p style="color: #94a3b8; font-size: 12px;">Sent automatically by Cloudflare Email Routing from noreply@btpsec.com</p>
         </div>
       </div>
     `;
@@ -112,7 +112,7 @@ export class EmailService {
           <li><strong>Current Active Streak:</strong> ${streakDays} Days 🔥</li>
           <li><strong>100% Mastered Topics:</strong> ${masteredTopicsCount} Topics</li>
         </ul>
-        <p style="color: #94a3b8; font-size: 12px;">From noreply@primerllm.com</p>
+        <p style="color: #94a3b8; font-size: 12px;">From noreply@btpsec.com</p>
       </div>
     `;
 

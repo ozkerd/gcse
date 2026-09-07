@@ -97,7 +97,7 @@ export function MasteryBadgeModal() {
             <div>
               <p className="font-semibold">Parent Notification Sent!</p>
               <p className="text-indigo-700 text-[11px] mt-0.5">
-                An email alert was dispatched to <strong>{parentEmail}</strong> from <code>noreply@primerllm.com</code> celebrating your achievement.
+                An email alert was dispatched to <strong>{parentEmail}</strong> from <code>noreply@btpsec.com</code> celebrating your achievement.
               </p>
             </div>
           </div>

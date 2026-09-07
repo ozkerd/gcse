@@ -133,7 +133,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, currentSe
                   className="mt-0.5 rounded text-indigo-600 focus:ring-indigo-500 w-4 h-4"
                 />
                 <span>
-                  Receive daily revision reminders, streak alerts, and 100% topic mastery awards via email from <strong className="text-indigo-700">noreply@primerllm.com</strong>
+                  Receive daily revision reminders, streak alerts, and 100% topic mastery awards via email from <strong className="text-indigo-700">noreply@btpsec.com</strong>
                 </span>
               </label>
             </div>
@@ -196,7 +196,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, currentSe
                   className="mt-0.5 rounded text-purple-600 focus:ring-purple-500 w-4 h-4"
                 />
                 <span>
-                  Receive weekly progress analysis, topic 100% mastery alerts, and achievements for my child from <strong className="text-purple-700">noreply@primerllm.com</strong>
+                  Receive weekly progress analysis, topic 100% mastery alerts, and achievements for my child from <strong className="text-purple-700">noreply@btpsec.com</strong>
                 </span>
               </label>
             </div>
