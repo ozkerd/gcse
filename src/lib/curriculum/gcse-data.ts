@@ -10988,7 +10988,7 @@ const seedChunk_1: SeedQuestion[] = [
     "subtopicId": "m-alg-2-sub-7",
     "subtopicName": "Experimental Techniques & Methods",
     "gradeLevel": 4,
-    "questionText": "Lawn area $30\\text{ m}^2$ with length $(x + 11)\\text{ m}$ and width $(x - 1)\\text{ m}$. Find $x$.",
+    "questionText": "Lawn area $28\\text{ m}^2$ with length $(x + 11)\\text{ m}$ and width $(x - 1)\\text{ m}$. Find $x$.",
     "questionType": "multiple_choice",
     "options": [
       "$x = 3\\text{ m}$",
@@ -10998,9 +10998,11 @@ const seedChunk_1: SeedQuestion[] = [
     ],
     "correctAnswer": "$x = 3\\text{ m}$",
     "explanation": {
-      "overview": "Form quadratic area equation.",
+      "overview": "Area = length x width = (x + 11)(x - 1) = 28. For x = 3: (3+11)(3-1) = 14 x 2 = 28 m^2.",
       "stepByStep": [
-        "Form quadratic area equation."
+        "Form equation: $(x + 11)(x - 1) = 28$.",
+        "Expand: $x^2 + 10x - 11 = 28 \\implies x^2 + 10x - 39 = 0$.",
+        "Factorise: $(x + 14)(x - 3) = 0 \\implies x = 3\\text{ m}$ (since $x > 0$)."
       ],
       "keyConcept": "Quadratic Equations, Factoring & Completing Square - Experimental Techniques & Methods",
       "commonMistakes": [
@@ -11288,7 +11290,7 @@ const seedChunk_1: SeedQuestion[] = [
     "subtopicId": "m-alg-2-sub-7",
     "subtopicName": "Experimental Techniques & Methods",
     "gradeLevel": 4,
-    "questionText": "Lawn area $30\\text{ m}^2$ with length $(x + 7)\\text{ m}$ and width $(x - 1)\\text{ m}$. Find $x$.",
+    "questionText": "Lawn area $20\\text{ m}^2$ with length $(x + 7)\\text{ m}$ and width $(x - 1)\\text{ m}$. Find $x$.",
     "questionType": "multiple_choice",
     "options": [
       "$x = 6\\text{ m}$",
@@ -11298,9 +11300,11 @@ const seedChunk_1: SeedQuestion[] = [
     ],
     "correctAnswer": "$x = 3\\text{ m}$",
     "explanation": {
-      "overview": "Form quadratic area equation.",
+      "overview": "Area = length x width = (x + 7)(x - 1) = 20. For x = 3: (3+7)(3-1) = 10 x 2 = 20 m^2.",
       "stepByStep": [
-        "Form quadratic area equation."
+        "Form equation: $(x + 7)(x - 1) = 20$.",
+        "Expand: $x^2 + 6x - 7 = 20 \\implies x^2 + 6x - 27 = 0$.",
+        "Factorise: $(x + 10)(x - 3) = 0 \\implies x = 3\\text{ m}$ (since $x > 0$)."
       ],
       "keyConcept": "Quadratic Equations, Factoring & Completing Square - Experimental Techniques & Methods",
       "commonMistakes": [
@@ -11583,7 +11587,7 @@ const seedChunk_1: SeedQuestion[] = [
     "subtopicId": "m-alg-2-sub-7",
     "subtopicName": "Experimental Techniques & Methods",
     "gradeLevel": 4,
-    "questionText": "Lawn area $30\\text{ m}^2$ with length $(x + 10)\\text{ m}$ and width $(x - 1)\\text{ m}$. Find $x$.",
+    "questionText": "Lawn area $26\\text{ m}^2$ with length $(x + 10)\\text{ m}$ and width $(x - 1)\\text{ m}$. Find $x$.",
     "questionType": "multiple_choice",
     "options": [
       "$x = 5\\text{ m}$",
@@ -11593,9 +11597,11 @@ const seedChunk_1: SeedQuestion[] = [
     ],
     "correctAnswer": "$x = 3\\text{ m}$",
     "explanation": {
-      "overview": "Form quadratic area equation.",
+      "overview": "Area = length x width = (x + 10)(x - 1) = 26. For x = 3: (3+10)(3-1) = 13 x 2 = 26 m^2.",
       "stepByStep": [
-        "Form quadratic area equation."
+        "Form equation: $(x + 10)(x - 1) = 26$.",
+        "Expand: $x^2 + 9x - 10 = 26 \\implies x^2 + 9x - 36 = 0$.",
+        "Factorise: $(x + 13)(x - 3) = 0 \\implies x = 3\\text{ m}$ (since $x > 0$)."
       ],
       "keyConcept": "Quadratic Equations, Factoring & Completing Square - Experimental Techniques & Methods",
       "commonMistakes": [
@@ -11883,7 +11889,7 @@ const seedChunk_1: SeedQuestion[] = [
     "subtopicId": "m-alg-2-sub-7",
     "subtopicName": "Experimental Techniques & Methods",
     "gradeLevel": 4,
-    "questionText": "Lawn area $30\\text{ m}^2$ with length $(x + 6)\\text{ m}$ and width $(x - 1)\\text{ m}$. Find $x$.",
+    "questionText": "Lawn area $18\\text{ m}^2$ with length $(x + 6)\\text{ m}$ and width $(x - 1)\\text{ m}$. Find $x$.",
     "questionType": "multiple_choice",
     "options": [
       "$x = 4\\text{ m}$",
@@ -11893,9 +11899,11 @@ const seedChunk_1: SeedQuestion[] = [
     ],
     "correctAnswer": "$x = 3\\text{ m}$",
     "explanation": {
-      "overview": "Form quadratic area equation.",
+      "overview": "Area = length x width = (x + 6)(x - 1) = 18. For x = 3: (3+6)(3-1) = 9 x 2 = 18 m^2.",
       "stepByStep": [
-        "Form quadratic area equation."
+        "Form equation: $(x + 6)(x - 1) = 18$.",
+        "Expand: $x^2 + 5x - 6 = 18 \\implies x^2 + 5x - 24 = 0$.",
+        "Factorise: $(x + 9)(x - 3) = 0 \\implies x = 3\\text{ m}$ (since $x > 0$)."
       ],
       "keyConcept": "Quadratic Equations, Factoring & Completing Square - Experimental Techniques & Methods",
       "commonMistakes": [
@@ -12183,7 +12191,7 @@ const seedChunk_1: SeedQuestion[] = [
     "subtopicId": "m-alg-2-sub-7",
     "subtopicName": "Experimental Techniques & Methods",
     "gradeLevel": 4,
-    "questionText": "Lawn area $30\\text{ m}^2$ with length $(x + 9)\\text{ m}$ and width $(x - 1)\\text{ m}$. Find $x$.",
+    "questionText": "Lawn area $24\\text{ m}^2$ with length $(x + 9)\\text{ m}$ and width $(x - 1)\\text{ m}$. Find $x$.",
     "questionType": "multiple_choice",
     "options": [
       "$x = 6\\text{ m}$",
@@ -12193,9 +12201,11 @@ const seedChunk_1: SeedQuestion[] = [
     ],
     "correctAnswer": "$x = 3\\text{ m}$",
     "explanation": {
-      "overview": "Form quadratic area equation.",
+      "overview": "Area = length x width = (x + 9)(x - 1) = 24. For x = 3: (3+9)(3-1) = 12 x 2 = 24 m^2.",
       "stepByStep": [
-        "Form quadratic area equation."
+        "Form equation: $(x + 9)(x - 1) = 24$.",
+        "Expand: $x^2 + 8x - 9 = 24 \\implies x^2 + 8x - 33 = 0$.",
+        "Factorise: $(x + 12)(x - 3) = 0 \\implies x = 3\\text{ m}$ (since $x > 0$)."
       ],
       "keyConcept": "Quadratic Equations, Factoring & Completing Square - Experimental Techniques & Methods",
       "commonMistakes": [
@@ -45443,10 +45453,10 @@ const seedChunk_4: SeedQuestion[] = [
     "questionText": "In GCSE Chemistry (Periodic Table Trends, Group 1 & Group 7), what quantity of moles corresponds to a sample undergoing reaction in Periodic Table (Variant 5)?",
     "questionType": "multiple_choice",
     "options": [
+      "$1.0\\text{ mol}$",
+      "$0.25\\text{ mol}$",
       "$0.5\\text{ mol}$",
-      "$1.0\\text{ mol}$",
-      "$1.0\\text{ mol}$",
-      "$0.25\\text{ mol}$"
+      "$2.0\\text{ mol}$"
     ],
     "correctAnswer": "$0.5\\text{ mol}$",
     "explanation": {
@@ -46694,9 +46704,9 @@ const seedChunk_4: SeedQuestion[] = [
     "questionType": "multiple_choice",
     "options": [
       "$0.5\\text{ mol}$",
-      "$1.0\\text{ mol}$",
-      "$1.0\\text{ mol}$",
-      "$0.25\\text{ mol}$"
+      "$0.25\\text{ mol}$",
+      "$2.0\\text{ mol}$",
+      "$1.0\\text{ mol}$"
     ],
     "correctAnswer": "$0.5\\text{ mol}$",
     "explanation": {
@@ -47943,10 +47953,10 @@ const seedChunk_4: SeedQuestion[] = [
     "questionText": "In GCSE Chemistry (Relative Formula Mass & Moles), what quantity of moles corresponds to a sample undergoing reaction in Quantitative Chemistry (Variant 5)?",
     "questionType": "multiple_choice",
     "options": [
-      "$0.5\\text{ mol}$",
+      "$0.25\\text{ mol}$",
       "$1.0\\text{ mol}$",
-      "$1.0\\text{ mol}$",
-      "$0.25\\text{ mol}$"
+      "$2.0\\text{ mol}$",
+      "$0.5\\text{ mol}$"
     ],
     "correctAnswer": "$0.5\\text{ mol}$",
     "explanation": {
@@ -49193,10 +49203,10 @@ const seedChunk_4: SeedQuestion[] = [
     "questionText": "In GCSE Chemistry (Percentage Yield, Atom Economy & Gas Volumes), what quantity of moles corresponds to a sample undergoing reaction in Quantitative Chemistry (Variant 5)?",
     "questionType": "multiple_choice",
     "options": [
-      "$0.5\\text{ mol}$",
       "$1.0\\text{ mol}$",
-      "$1.0\\text{ mol}$",
-      "$0.25\\text{ mol}$"
+      "$2.0\\text{ mol}$",
+      "$0.25\\text{ mol}$",
+      "$0.5\\text{ mol}$"
     ],
     "correctAnswer": "$0.5\\text{ mol}$",
     "explanation": {
@@ -50443,9 +50453,9 @@ const seedChunk_4: SeedQuestion[] = [
     "questionText": "In GCSE Chemistry (Reactivity Series & Metal Extraction), what quantity of moles corresponds to a sample undergoing reaction in Chemical Changes (Variant 5)?",
     "questionType": "multiple_choice",
     "options": [
+      "$2.0\\text{ mol}$",
+      "$1.0\\text{ mol}$",
       "$0.5\\text{ mol}$",
-      "$1.0\\text{ mol}$",
-      "$1.0\\text{ mol}$",
       "$0.25\\text{ mol}$"
     ],
     "correctAnswer": "$0.5\\text{ mol}$",
@@ -51693,10 +51703,10 @@ const seedChunk_4: SeedQuestion[] = [
     "questionText": "In GCSE Chemistry (Acids, Alkalis, Neutralisation & Titrations), what quantity of moles corresponds to a sample undergoing reaction in Chemical Changes (Variant 5)?",
     "questionType": "multiple_choice",
     "options": [
-      "$0.5\\text{ mol}$",
+      "$0.25\\text{ mol}$",
+      "$2.0\\text{ mol}$",
       "$1.0\\text{ mol}$",
-      "$1.0\\text{ mol}$",
-      "$0.25\\text{ mol}$"
+      "$0.5\\text{ mol}$"
     ],
     "correctAnswer": "$0.5\\text{ mol}$",
     "explanation": {
@@ -52944,9 +52954,9 @@ const seedChunk_4: SeedQuestion[] = [
     "questionType": "multiple_choice",
     "options": [
       "$0.5\\text{ mol}$",
-      "$1.0\\text{ mol}$",
-      "$1.0\\text{ mol}$",
-      "$0.25\\text{ mol}$"
+      "$2.0\\text{ mol}$",
+      "$0.25\\text{ mol}$",
+      "$1.0\\text{ mol}$"
     ],
     "correctAnswer": "$0.5\\text{ mol}$",
     "explanation": {
@@ -54193,10 +54203,10 @@ const seedChunk_4: SeedQuestion[] = [
     "questionText": "In GCSE Chemistry (Exothermic & Endothermic Reactions & Bond Energy), what quantity of moles corresponds to a sample undergoing reaction in Energy Changes (Variant 5)?",
     "questionType": "multiple_choice",
     "options": [
-      "$0.5\\text{ mol}$",
+      "$2.0\\text{ mol}$",
+      "$0.25\\text{ mol}$",
       "$1.0\\text{ mol}$",
-      "$1.0\\text{ mol}$",
-      "$0.25\\text{ mol}$"
+      "$0.5\\text{ mol}$"
     ],
     "correctAnswer": "$0.5\\text{ mol}$",
     "explanation": {
@@ -55443,10 +55453,10 @@ const seedChunk_4: SeedQuestion[] = [
     "questionText": "In GCSE Chemistry (Rates of Reaction & Collision Theory), what quantity of moles corresponds to a sample undergoing reaction in Rates of Reaction (Variant 5)?",
     "questionType": "multiple_choice",
     "options": [
-      "$0.5\\text{ mol}$",
       "$1.0\\text{ mol}$",
-      "$1.0\\text{ mol}$",
-      "$0.25\\text{ mol}$"
+      "$0.25\\text{ mol}$",
+      "$2.0\\text{ mol}$",
+      "$0.5\\text{ mol}$"
     ],
     "correctAnswer": "$0.5\\text{ mol}$",
     "explanation": {
@@ -56698,8 +56708,8 @@ const seedChunk_5: SeedQuestion[] = [
     "options": [
       "$0.5\\text{ mol}$",
       "$1.0\\text{ mol}$",
-      "$1.0\\text{ mol}$",
-      "$0.25\\text{ mol}$"
+      "$0.25\\text{ mol}$",
+      "$2.0\\text{ mol}$"
     ],
     "correctAnswer": "$0.5\\text{ mol}$",
     "explanation": {
@@ -57946,10 +57956,10 @@ const seedChunk_5: SeedQuestion[] = [
     "questionText": "In GCSE Chemistry (Crude Oil, Fractional Distillation & Alkanes), what quantity of moles corresponds to a sample undergoing reaction in Organic Chemistry (Variant 5)?",
     "questionType": "multiple_choice",
     "options": [
-      "$0.5\\text{ mol}$",
+      "$2.0\\text{ mol}$",
       "$1.0\\text{ mol}$",
-      "$1.0\\text{ mol}$",
-      "$0.25\\text{ mol}$"
+      "$0.25\\text{ mol}$",
+      "$0.5\\text{ mol}$"
     ],
     "correctAnswer": "$0.5\\text{ mol}$",
     "explanation": {
