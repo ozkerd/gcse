@@ -316,7 +316,7 @@ export class UserStore {
     });
   }
 
-  private static CURRENT_CACHE_VERSION = 'v3_purge_clean';
+  private static CURRENT_CACHE_VERSION = 'v4_interleaved_20_80';
 
   static getStoredQuestions(): SeedQuestion[] {
     const raw = getCookie('gcse_stored_questions');

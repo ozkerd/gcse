@@ -5,6 +5,8 @@ import { X, CheckCircle2, XCircle, Sparkles, ArrowRight, Award, Zap, RefreshCw, 
 import { AdaptiveEngine } from '@/lib/adaptive/engine';
 import { SeedQuestion, GCSE_TOPICS, GCSE_SUBJECTS, GCSETopic } from '@/lib/curriculum/gcse-data';
 import { UserStore } from '@/lib/user-store';
+import { validateAnswer } from '@/lib/ai/generator';
+import { QuestionCard } from './QuestionCard';
 import { KaTeXRenderer } from './KaTeXRenderer';
 
 interface QuickAssessmentModalProps {
@@ -83,7 +85,8 @@ export function QuickAssessmentModal({ isOpen, onClose }: QuickAssessmentModalPr
   const handleSubmitAnswer = () => {
     if (!selectedOption || !currentQ || isAnswered) return;
 
-    const isCorrect = selectedOption === currentQ.correctAnswer;
+    const evalRes = validateAnswer(currentQ, selectedOption);
+    const isCorrect = evalRes.isCorrect;
     setIsAnswered(true);
 
     // Record stats and topic mastery
@@ -273,84 +276,24 @@ export function QuickAssessmentModal({ isOpen, onClose }: QuickAssessmentModalPr
               </button>
             </div>
           ) : step === 'test' && currentQ ? (
-            <div>
-              <div className="flex items-center justify-between mb-4">
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
                 <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">
                   Question {currentIndex + 1} of {questions.length} • Year {selectedYear}
                 </span>
-                <div className="flex items-center gap-1.5">
-                  <span className="text-xs font-semibold px-2.5 py-1 bg-purple-50 dark:bg-purple-950/50 text-purple-700 dark:text-purple-300 rounded-full border border-purple-200 dark:border-purple-800">
-                    📜 {currentQ.examBoard || 'AQA'} {currentQ.paperYear || 2023}
-                  </span>
-                  <span className="text-xs font-semibold px-2.5 py-1 bg-indigo-50 dark:bg-indigo-950/50 text-indigo-600 dark:text-indigo-400 rounded-full border border-indigo-200 dark:border-indigo-800">
-                    Target Grade {currentQ.gradeLevel}
-                  </span>
-                </div>
+                <span className="text-xs font-bold text-indigo-600">
+                  Target Grade {currentQ.gradeLevel}
+                </span>
               </div>
 
-              {/* Question Text */}
-              <div className="p-4 bg-slate-50 dark:bg-slate-800/60 rounded-2xl border border-slate-200 dark:border-slate-800 mb-5">
-                <KaTeXRenderer content={currentQ.questionText} className="text-base font-semibold text-slate-900 dark:text-slate-100" />
-              </div>
-
-              {/* Options */}
-              <div className="space-y-3 mb-6">
-                {currentQ.options?.map((opt, idx) => {
-                  let btnStyle = "border-slate-200 dark:border-slate-800 hover:border-indigo-400 hover:bg-indigo-50/50 dark:hover:bg-indigo-950/30 text-slate-800 dark:text-slate-100";
-                  if (selectedOption === opt) {
-                    btnStyle = "border-indigo-600 bg-indigo-50 dark:bg-indigo-950/60 font-semibold text-indigo-900 dark:text-indigo-200";
-                  }
-
-                  if (isAnswered) {
-                    if (opt === currentQ.correctAnswer) {
-                      btnStyle = "border-emerald-500 bg-emerald-50 dark:bg-emerald-950/60 text-emerald-900 dark:text-emerald-200 font-bold";
-                    } else if (selectedOption === opt) {
-                      btnStyle = "border-rose-500 bg-rose-50 dark:bg-rose-950/60 text-rose-900 dark:text-rose-200 font-semibold";
-                    }
-                  }
-
-                  return (
-                    <button
-                      key={idx}
-                      onClick={() => handleSelectOption(opt)}
-                      disabled={isAnswered}
-                      className={`w-full p-4 text-left rounded-2xl border-2 transition-all flex items-center justify-between ${btnStyle}`}
-                    >
-                      <div className="flex items-center gap-3">
-                        <span className="w-7 h-7 rounded-xl bg-slate-200 dark:bg-slate-700 font-bold text-xs flex items-center justify-center shrink-0">
-                          {String.fromCharCode(65 + idx)}
-                        </span>
-                        <KaTeXRenderer content={opt} />
-                      </div>
-
-                      {isAnswered && opt === currentQ.correctAnswer && (
-                        <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0" />
-                      )}
-                      {isAnswered && selectedOption === opt && opt !== currentQ.correctAnswer && (
-                        <XCircle className="w-5 h-5 text-rose-600 shrink-0" />
-                      )}
-                    </button>
-                  );
-                })}
-              </div>
-
-              {/* Instant Solution Feedback */}
-              {isAnswered && (
-                <div className="p-4 rounded-2xl bg-indigo-50/70 dark:bg-indigo-950/40 border border-indigo-200 dark:border-indigo-800 text-sm space-y-2 mb-6 animate-in fade-in">
-                  <div className="font-bold text-indigo-900 dark:text-indigo-300 flex items-center gap-1.5">
-                    <Sparkles className="w-4 h-4 text-indigo-500" />
-                    Key GCSE Concept & Explanation
-                  </div>
-                  <p className="text-slate-700 dark:text-slate-300 text-xs">
-                    {currentQ.explanation.overview}
-                  </p>
-                  {currentQ.explanation.examTip && (
-                    <div className="text-xs font-medium text-amber-800 dark:text-amber-300 bg-amber-50 dark:bg-amber-950/40 p-2.5 rounded-xl border border-amber-200 dark:border-amber-800">
-                      💡 <strong>Exam Tip:</strong> {currentQ.explanation.examTip}
-                    </div>
-                  )}
-                </div>
-              )}
+              <QuestionCard
+                question={currentQ}
+                selectedAnswer={selectedOption}
+                onAnswerChange={handleSelectOption}
+                hasSubmitted={isAnswered}
+                onSubmit={handleSubmitAnswer}
+                onNext={handleNext}
+              />
             </div>
           ) : step === 'results' ? (
             /* Results Screen */

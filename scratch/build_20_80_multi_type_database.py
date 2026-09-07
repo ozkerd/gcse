@@ -51,36 +51,31 @@ def extract_number(val):
         return m.group(0)
     return c
 
-# Transform questions topic by topic
+# Transform questions topic by topic with strict 1:4 (20/80) interleaving
 updated_questions = []
 
 for t_id, q_list in by_topic.items():
     subject_id = t_id.split('-')[0] # m, p, ch, bio, cs, hist, eng, geo, bus, econ
+    is_stem = subject_id in ['m', 'p', 'ch', 'bio', 'cs', 'econ']
     
     for idx, q in enumerate(q_list):
         new_q = dict(q)
+        q_mod = idx % 5
         
-        # 0..9 (20%) -> multiple_choice
-        if idx < 10:
+        if q_mod == 0:
+            # 20% Multiple Choice
             new_q['questionType'] = 'multiple_choice'
             new_q['markScheme'] = f"1 mark for selecting the correct option ({clean_latex(new_q['correctAnswer'])})."
-            # ensure options exist
             if not new_q.get('options') or len(new_q.get('options')) < 4:
                 correct = new_q['correctAnswer']
                 new_q['options'] = [correct, f"Incorrect option A for {q.get('id')}", f"Incorrect option B", f"Incorrect option C"]
         else:
-            # 10..49 (80%) -> numerical, fill_in_blank, or short_answer
-            # Remove options for written types
+            # 80% Multi-type (written/open)
             if 'options' in new_q:
                 del new_q['options']
                 
-            is_stem = subject_id in ['m', 'p', 'ch', 'bio', 'cs', 'econ']
-            
-            # Decide type based on index within 10..49
-            sub_idx = idx - 10 # 0..39
-            
             if is_stem:
-                if sub_idx < 20:
+                if q_mod in [1, 2]:
                     # Numerical calculation
                     new_q['questionType'] = 'numerical'
                     num_val = extract_number(new_q['correctAnswer'])
@@ -96,7 +91,7 @@ for t_id, q_list in by_topic.items():
                     new_q['acceptableAnswers'] = [a for a in acceptable if a]
                     new_q['numericalTolerance'] = 0.05
                     new_q['markScheme'] = f"1 mark for correct method/formula application.\n1 mark for correct numerical evaluation: {num_val} (tolerance ±0.05)."
-                elif sub_idx < 30:
+                elif q_mod == 3:
                     # Fill in blank
                     new_q['questionType'] = 'fill_in_blank'
                     ans_clean = clean_latex(new_q['correctAnswer'])
@@ -125,7 +120,7 @@ for t_id, q_list in by_topic.items():
                     new_q['markScheme'] = f"• 1 mark: Identify core concept ({overview or ans_clean}).{step_text}\n• 1 mark: Clear technical accuracy."
             else:
                 # Humanities / Languages
-                if sub_idx < 25:
+                if q_mod in [1, 2, 4]:
                     # Short answer
                     new_q['questionType'] = 'short_answer'
                     ans_clean = clean_latex(new_q['correctAnswer'])

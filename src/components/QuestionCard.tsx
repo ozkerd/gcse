@@ -29,6 +29,10 @@ export function QuestionCard({
 }: QuestionCardProps) {
   const [textInput, setTextInput] = useState<string>(selectedAnswer || '');
 
+  React.useEffect(() => {
+    setTextInput(selectedAnswer || '');
+  }, [selectedAnswer, question.id]);
+
   // Math helper symbols for keyboard toolbar
   const mathSymbols = [
     { label: 'x²', value: '^2' },
