@@ -1596,14 +1596,29 @@ export function validateAnswer(question: SeedQuestion, userAnswer: string): Eval
     };
   }
 
-  // Helper: Normalize math expressions (strip LaTeX formatting, symbols, spaces, parentheses)
+  // Helper: Normalize math expressions (strip LaTeX formatting, Unicode symbols, spaces, parentheses)
   const normalizeMath = (s: string) => {
     return s
       .toLowerCase()
+      .replace(/√/g, 'sqrt')
+      .replace(/\\sqrt/g, 'sqrt')
+      .replace(/π/g, 'pi')
+      .replace(/\\pi/g, 'pi')
+      .replace(/²/g, '^2')
+      .replace(/³/g, '^3')
+      .replace(/°/g, '')
+      .replace(/\\circ/g, '')
+      .replace(/×/g, '*')
       .replace(/\\times/g, '*')
       .replace(/\\cdot/g, '*')
+      .replace(/÷/g, '/')
       .replace(/\\div/g, '/')
-      .replace(/\\sqrt/g, 'sqrt')
+      .replace(/±/g, '+-')
+      .replace(/\\pm/g, '+-')
+      .replace(/≈/g, '=')
+      .replace(/\\approx/g, '=')
+      .replace(/θ/g, 'theta')
+      .replace(/\\theta/g, 'theta')
       .replace(/\\frac\{([^}]+)\}\{([^}]+)\}/g, '$1/$2')
       .replace(/[\$\{\}\\\s\(\)]/g, '');
   };
@@ -1755,6 +1770,8 @@ export function validateAnswer(question: SeedQuestion, userAnswer: string): Eval
   const stripUnits = (s: string) => {
     return s
       .toLowerCase()
+      .replace(/°/g, '')
+      .replace(/\\circ/g, '')
       .replace(/\b(cm|m|km|kg|g|s|j|kj|w|v|a|n|pa|hz|mol|m\/s|m\/s\^2|degrees|°c|%)\b/gi, '')
       .replace(/[^0-9\.\-\/]/g, '')
       .trim();

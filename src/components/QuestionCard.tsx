@@ -28,27 +28,44 @@ export function QuestionCard({
   loading = false,
 }: QuestionCardProps) {
   const [textInput, setTextInput] = useState<string>(selectedAnswer || '');
+  const inputRef = React.useRef<HTMLInputElement | HTMLTextAreaElement | null>(null);
 
   React.useEffect(() => {
     setTextInput(selectedAnswer || '');
   }, [selectedAnswer, question.id]);
 
-  // Math helper symbols for keyboard toolbar
+  // Clean Unicode math helper symbols for keyboard toolbar
   const mathSymbols = [
-    { label: 'x²', value: '^2' },
-    { label: '√x', value: '\\sqrt{}' },
-    { label: 'π', value: '\\pi' },
-    { label: 'θ', value: '\\theta' },
-    { label: 'a/b', value: '\\frac{a}{b}' },
-    { label: '±', value: '\\pm' },
-    { label: '≈', value: '\\approx' },
-    { label: 'Δ', value: '\\Delta' },
+    { label: '√', value: '√', title: 'Square Root' },
+    { label: 'π', value: 'π', title: 'Pi' },
+    { label: 'x²', value: '²', title: 'Squared' },
+    { label: 'x³', value: '³', title: 'Cubed' },
+    { label: '±', value: '±', title: 'Plus-minus' },
+    { label: '°', value: '°', title: 'Degrees' },
+    { label: 'θ', value: 'θ', title: 'Theta' },
+    { label: '×', value: '×', title: 'Multiply' },
+    { label: '÷', value: '÷', title: 'Divide' },
+    { label: '≈', value: '≈', title: 'Approximately' },
   ];
 
   const handleInsertSymbol = (sym: string) => {
-    const newVal = textInput + sym;
-    setTextInput(newVal);
-    onAnswerChange(newVal);
+    const el = inputRef.current;
+    if (el && typeof el.selectionStart === 'number' && typeof el.selectionEnd === 'number') {
+      const start = el.selectionStart;
+      const end = el.selectionEnd;
+      const currentVal = textInput || '';
+      const newVal = currentVal.substring(0, start) + sym + currentVal.substring(end);
+      setTextInput(newVal);
+      onAnswerChange(newVal);
+      setTimeout(() => {
+        el.focus();
+        el.setSelectionRange(start + sym.length, start + sym.length);
+      }, 0);
+    } else {
+      const newVal = (textInput || '') + sym;
+      setTextInput(newVal);
+      onAnswerChange(newVal);
+    }
   };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
@@ -150,8 +167,9 @@ export function QuestionCard({
                 <button
                   key={idx}
                   type="button"
+                  title={s.title}
                   onClick={() => handleInsertSymbol(s.value)}
-                  className="px-2.5 py-1 bg-white hover:bg-indigo-50 border border-slate-200 hover:border-indigo-300 rounded-lg text-xs font-mono font-bold text-slate-800 transition-all"
+                  className="px-2.5 py-1 bg-white hover:bg-indigo-50 border border-slate-200 hover:border-indigo-300 rounded-lg text-xs font-mono font-bold text-slate-800 transition-all active:scale-95"
                 >
                   {s.label}
                 </button>
@@ -162,6 +180,7 @@ export function QuestionCard({
           {/* Text/Number Input */}
           {question.questionType === 'short_answer' ? (
             <textarea
+              ref={inputRef as React.RefObject<HTMLTextAreaElement>}
               rows={4}
               disabled={hasSubmitted}
               value={textInput}
@@ -172,7 +191,8 @@ export function QuestionCard({
           ) : (
             <div className="relative">
               <input
-                type={question.questionType === 'numerical' ? 'text' : 'text'}
+                ref={inputRef as React.RefObject<HTMLInputElement>}
+                type="text"
                 disabled={hasSubmitted}
                 value={textInput}
                 onChange={handleInputChange}
@@ -183,11 +203,11 @@ export function QuestionCard({
                 }
                 className="w-full p-4 rounded-2xl border-2 border-slate-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 text-sm font-semibold bg-white text-slate-900 placeholder:text-slate-400 disabled:bg-slate-50"
               />
-              {question.numericalTolerance && (
+              {typeof question.numericalTolerance === 'number' && question.numericalTolerance > 0 ? (
                 <span className="absolute right-4 top-4 text-xs font-medium text-slate-400">
                   Tolerance: ±{question.numericalTolerance}
                 </span>
-              )}
+              ) : null}
             </div>
           )}
         </div>
