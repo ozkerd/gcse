@@ -11,7 +11,7 @@
     "db:push": "drizzle-kit push:sqlite",
     "pages:build": "npx @cloudflare/next-on-pages",
     "preview": "npm run pages:build && wrangler pages dev",
-    "deploy": "npm run pages:build && wrangler pages deploy"
+    "deploy": "npm run pages:build && wrangler pages deploy .vercel/output/static --project-name gcse"
   },
   "dependencies": {
     "clsx": "^2.1.1",
