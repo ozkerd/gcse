@@ -89,7 +89,7 @@ export function QuestionCard({
         <div className="text-base sm:text-lg font-bold text-slate-900 leading-relaxed">
           <KaTeXRenderer content={question.questionText} />
         </div>
-        {question.fillInTemplate && question.questionType === 'fill_in_blank' && (
+        {question.fillInTemplate && question.questionType === 'fill_in_blank' && question.fillInTemplate !== question.questionText && (
           <div className="p-3 bg-indigo-50/60 border border-indigo-100 rounded-xl text-sm font-medium text-indigo-950">
             <KaTeXRenderer content={question.fillInTemplate} />
           </div>

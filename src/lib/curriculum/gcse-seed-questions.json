@@ -28695,7 +28695,11 @@
     "correctAnswer": "2",
     "acceptableAnswers": [
       "2",
-      "two"
+      "two",
+      "2\\theta",
+      "2θ",
+      "twice",
+      "double"
     ],
     "fillInTemplate": "An arc subtends an angle $\\theta$ at the circumference; at the centre it subtends _____ $\\theta$.",
     "numericalTolerance": null,
