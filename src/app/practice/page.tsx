@@ -147,27 +147,27 @@ function PracticeContent() {
     <div className="max-w-4xl mx-auto space-y-6">
       
       {/* Search Header */}
-      <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm space-y-4">
+      <div className="bg-white dark:bg-slate-900 p-6 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-4 transition-colors">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
-            <div className="flex items-center gap-2 text-xs font-bold text-indigo-600 uppercase tracking-wider">
+            <div className="flex items-center gap-2 text-xs font-bold text-indigo-600 dark:text-indigo-400 uppercase tracking-wider">
               <Sparkles className="w-4 h-4 text-yellow-500" />
-              Adaptive AI Question Engine (20% MC / 80% Calculations & Written)
+              Adaptive Practice • 20% MC / 80% Calculations & Written
             </div>
-            <h1 className="text-xl sm:text-2xl font-extrabold text-slate-900 mt-0.5">
+            <h1 className="text-xl sm:text-2xl font-extrabold text-slate-900 dark:text-slate-100 mt-0.5">
               {currentTopic.topicName}
             </h1>
-            <p className="text-xs text-slate-500 mt-0.5">
+            <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
               Unit: {currentTopic.unitName} • Grade {currentTopic.minGrade}–{currentTopic.maxGrade} Specification
             </p>
           </div>
 
           {/* Live Score Counter */}
-          <div className="flex items-center gap-3 bg-indigo-50/80 border border-indigo-100 px-4 py-2 rounded-2xl shrink-0">
-            <Award className="w-5 h-5 text-indigo-600" />
+          <div className="flex items-center gap-3 bg-indigo-50/80 dark:bg-indigo-950/60 border border-indigo-100 dark:border-indigo-900/60 px-4 py-2 rounded-2xl shrink-0">
+            <Award className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
             <div className="text-xs">
-              <span className="text-slate-500 font-medium">Accuracy: </span>
-              <span className="font-extrabold text-indigo-900">
+              <span className="text-slate-500 dark:text-slate-400 font-medium">Accuracy: </span>
+              <span className="font-extrabold text-indigo-900 dark:text-indigo-200">
                 {totalAttempts > 0 ? Math.round((scoreCount / totalAttempts) * 100) : 100}% ({scoreCount}/{totalAttempts})
               </span>
             </div>
@@ -175,14 +175,14 @@ function PracticeContent() {
         </div>
 
         {/* Subtopic Selector & Question Type Toolbar */}
-        <div className="pt-2 border-t border-slate-100 flex flex-col md:flex-row md:items-center justify-between gap-3">
+        <div className="pt-2 border-t border-slate-100 dark:border-slate-800 flex flex-col md:flex-row md:items-center justify-between gap-3">
           {/* Subtopic Dropdown */}
           <div className="flex items-center gap-2 flex-1">
-            <span className="text-xs font-bold text-slate-600 whitespace-nowrap">🎯 Subtopic:</span>
+            <span className="text-xs font-bold text-slate-600 dark:text-slate-400 whitespace-nowrap">🎯 Subtopic:</span>
             <select
               value={selectedSubtopic}
               onChange={(e) => setSelectedSubtopic(e.target.value)}
-              className="w-full text-xs font-semibold p-2 rounded-xl border border-slate-200 bg-slate-50 text-slate-800 focus:ring-2 focus:ring-indigo-500"
+              className="w-full text-xs font-semibold p-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-800 dark:text-slate-200 focus:ring-2 focus:ring-indigo-500"
             >
               <option value="">All 10 Subtopics (Adaptive Curriculum)</option>
               {topicSubtopics.map(sub => (
@@ -195,7 +195,7 @@ function PracticeContent() {
 
           {/* Format Filter Buttons */}
           <div className="flex flex-wrap items-center gap-1.5">
-            <span className="text-[11px] font-bold text-slate-500 uppercase mr-1">Format:</span>
+            <span className="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase mr-1">Format:</span>
             {[
               { id: 'all', label: '🎯 20/80 Ratio' },
               { id: 'numerical', label: '🔢 Numerical' },
@@ -209,7 +209,7 @@ function PracticeContent() {
                 className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all ${
                   typeFilter === tab.id
                     ? 'bg-indigo-600 text-white shadow-sm'
-                    : 'bg-slate-100 hover:bg-slate-200 text-slate-600'
+                    : 'bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300'
                 }`}
               >
                 {tab.label}

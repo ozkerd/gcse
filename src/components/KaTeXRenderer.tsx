@@ -27,12 +27,12 @@ export const KaTeXRenderer: React.FC<Props> = ({ content, className = '' }) => {
             return (
               <span
                 key={index}
-                className="inline-math mx-1 text-indigo-700 font-semibold"
+                className="inline-math mx-1 text-indigo-700 dark:text-indigo-300 font-semibold"
                 dangerouslySetInnerHTML={{ __html: html }}
               />
             );
           } catch (e) {
-            return <code key={index} className="bg-gray-100 px-1 rounded">{math}</code>;
+            return <code key={index} className="bg-slate-100 dark:bg-slate-800 px-1 rounded text-slate-800 dark:text-slate-200">{math}</code>;
           }
         }
         return <React.Fragment key={index}>{part}</React.Fragment>;

@@ -2,11 +2,12 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { Award, Sparkles, TrendingUp, Calendar, AlertCircle, ArrowRight, CheckCircle, RefreshCw, Zap, GraduationCap } from 'lucide-react';
+import { Award, Sparkles, TrendingUp, Calendar, AlertCircle, ArrowRight, CheckCircle, Zap, GraduationCap, BarChart2 } from 'lucide-react';
 import { AdaptiveEngine } from '@/lib/adaptive/engine';
 import { UserStore, UserSession, DailyStats } from '@/lib/user-store';
 import { SearchBar } from '@/components/SearchBar';
 import { QuickAssessmentModal } from '@/components/QuickAssessmentModal';
+import { TopicBreakdownModal } from '@/components/TopicBreakdownModal';
 
 export default function Dashboard() {
   const [session, setSession] = useState<UserSession>({
@@ -25,27 +26,39 @@ export default function Dashboard() {
 
   const [estimatedGrade, setEstimatedGrade] = useState<number>(6.5);
   const [isQuickAssessmentOpen, setIsQuickAssessmentOpen] = useState(false);
+  const [isBreakdownOpen, setIsBreakdownOpen] = useState(false);
+  const [allTimeAttempted, setAllTimeAttempted] = useState(0);
 
   useEffect(() => {
     setSession(UserStore.getSession());
     setDailyStats(UserStore.getDailyStats());
 
-    const handleUserUpdate = () => setSession(UserStore.getSession());
-    const handleStatsUpdate = () => {
-      setDailyStats(UserStore.getDailyStats());
+    const updateMasteries = () => {
       const masteries = Object.values(UserStore.getTopicMasteries());
       if (masteries.length > 0) {
         const est = AdaptiveEngine.calculateEstimatedGrade(masteries);
         setEstimatedGrade(est);
+        const attempted = masteries.reduce((sum, m) => sum + (m.totalAttempted || 0), 0);
+        setAllTimeAttempted(attempted);
       }
+    };
+
+    updateMasteries();
+
+    const handleUserUpdate = () => setSession(UserStore.getSession());
+    const handleStatsUpdate = () => {
+      setDailyStats(UserStore.getDailyStats());
+      updateMasteries();
     };
 
     window.addEventListener('gcse_user_updated', handleUserUpdate);
     window.addEventListener('gcse_stats_updated', handleStatsUpdate);
+    window.addEventListener('gcse_masteries_updated', handleStatsUpdate);
 
     return () => {
       window.removeEventListener('gcse_user_updated', handleUserUpdate);
       window.removeEventListener('gcse_stats_updated', handleStatsUpdate);
+      window.removeEventListener('gcse_masteries_updated', handleStatsUpdate);
     };
   }, []);
 
@@ -64,16 +77,17 @@ export default function Dashboard() {
 
   const targetDailyQuestions = 15;
   const progressPercent = Math.min(100, Math.round((dailyStats.questionsAttemptedToday / targetDailyQuestions) * 100));
+  const totalSolvedDisplay = allTimeAttempted > 0 ? allTimeAttempted : dailyStats.questionsAttemptedToday;
 
   return (
     <div className="space-y-8">
       
       {/* Header & Google Search */}
-      <div className="flex flex-col gap-6 bg-white p-6 sm:p-8 rounded-3xl border border-slate-200 shadow-sm">
+      <div className="flex flex-col gap-6 bg-white dark:bg-slate-900 p-6 sm:p-8 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm transition-colors">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
-            <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900">Student Dashboard & Progress</h1>
-            <p className="text-slate-500 text-sm mt-1">
+            <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-slate-100">Student Dashboard & Progress</h1>
+            <p className="text-slate-500 dark:text-slate-400 text-sm mt-1">
               {session.role === 'guest'
                 ? 'Learning in Guest Mode. Your progress is saved dynamically via cookies.'
                 : `Welcome back, ${session.name}! View daily goals and track your path to Grade ${session.targetGrade}.`}
@@ -82,17 +96,17 @@ export default function Dashboard() {
 
           {/* School Year & Target Grade Selectors */}
           <div className="flex flex-wrap items-center gap-3 shrink-0">
-            <div className="flex items-center gap-3 bg-purple-50 border border-purple-100 p-2.5 rounded-2xl">
-              <GraduationCap className="w-5 h-5 text-purple-600 shrink-0" />
+            <div className="flex items-center gap-3 bg-purple-50 dark:bg-purple-950/50 border border-purple-100 dark:border-purple-900/60 p-2.5 rounded-2xl">
+              <GraduationCap className="w-5 h-5 text-purple-600 dark:text-purple-400 shrink-0" />
               <div>
-                <label className="block text-[10px] font-bold text-purple-900 uppercase tracking-wider">School Year</label>
+                <label className="block text-[10px] font-bold text-purple-900 dark:text-purple-300 uppercase tracking-wider">School Year</label>
                 <select
                   value={session.schoolYear || 10}
                   onChange={(e) => {
                     const yr = Number(e.target.value);
                     UserStore.setSchoolYear(yr);
                   }}
-                  className="bg-white border border-purple-200 text-purple-950 font-bold text-xs rounded-lg px-2 py-1 focus:ring-2 focus:ring-purple-500"
+                  className="bg-white dark:bg-slate-800 border border-purple-200 dark:border-purple-800 text-purple-950 dark:text-purple-200 font-bold text-xs rounded-lg px-2 py-1 focus:ring-2 focus:ring-purple-500"
                 >
                   <option value={8}>Year 8 (Foundation / Gr 4)</option>
                   <option value={9}>Year 9 (Grade 5)</option>
@@ -102,14 +116,14 @@ export default function Dashboard() {
               </div>
             </div>
 
-            <div className="flex items-center gap-3 bg-indigo-50/80 border border-indigo-100 p-2.5 rounded-2xl">
-              <Award className="w-5 h-5 text-indigo-600 shrink-0" />
+            <div className="flex items-center gap-3 bg-indigo-50/80 dark:bg-indigo-950/50 border border-indigo-100 dark:border-indigo-900/60 p-2.5 rounded-2xl">
+              <Award className="w-5 h-5 text-indigo-600 dark:text-indigo-400 shrink-0" />
               <div>
-                <label className="block text-[10px] font-bold text-indigo-900 uppercase tracking-wider">Target GCSE Grade</label>
+                <label className="block text-[10px] font-bold text-indigo-900 dark:text-indigo-300 uppercase tracking-wider">Target GCSE Grade</label>
                 <select
                   value={session.targetGrade}
                   onChange={(e) => handleTargetGradeChange(Number(e.target.value))}
-                  className="bg-white border border-indigo-200 text-indigo-950 font-bold text-xs rounded-lg px-2 py-1 focus:ring-2 focus:ring-indigo-500"
+                  className="bg-white dark:bg-slate-800 border border-indigo-200 dark:border-indigo-800 text-indigo-950 dark:text-indigo-200 font-bold text-xs rounded-lg px-2 py-1 focus:ring-2 focus:ring-indigo-500"
                 >
                   {[4, 5, 6, 7, 8, 9].map(g => (
                     <option key={g} value={g}>Grade {g} (Target)</option>
@@ -138,48 +152,72 @@ export default function Dashboard() {
       {/* Metrics Banner */}
       <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
         
-        <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
+        {/* Metric 1: Estimated Grade */}
+        <div className="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm transition-colors">
           <div className="flex items-center justify-between mb-2">
-            <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Estimated Current Grade</span>
-            <TrendingUp className="w-5 h-5 text-indigo-600" />
+            <span className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Estimated Current Grade</span>
+            <TrendingUp className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
           </div>
-          <div className="text-3xl font-extrabold text-slate-900">Grade {estimatedGrade}</div>
-          <p className="text-xs text-indigo-600 font-semibold mt-2">
+          <div className="text-3xl font-extrabold text-slate-900 dark:text-slate-100">Grade {estimatedGrade}</div>
+          <p className="text-xs text-indigo-600 dark:text-indigo-400 font-semibold mt-2">
             {(session.targetGrade - estimatedGrade) > 0 
               ? `${(session.targetGrade - estimatedGrade).toFixed(1)} Grades remaining to Target`
               : 'Target Grade achieved!'}
           </p>
         </div>
 
-        <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
+        {/* Metric 2: Streak */}
+        <div className="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm transition-colors">
           <div className="flex items-center justify-between mb-2">
-            <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Study Streak</span>
+            <span className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Study Streak</span>
             <Sparkles className="w-5 h-5 text-amber-500" />
           </div>
-          <div className="text-3xl font-extrabold text-slate-900">{dailyStats.streakDays} Days 🔥</div>
-          <p className="text-xs text-slate-500 mt-2">Active daily momentum tracking</p>
+          <div className="text-3xl font-extrabold text-slate-900 dark:text-slate-100">{dailyStats.streakDays} Days 🔥</div>
+          <p className="text-xs text-slate-500 dark:text-slate-400 mt-2">Active daily momentum tracking</p>
         </div>
 
-        <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
+        {/* Metric 3: Clickable Solved Questions with Breakdown Trigger */}
+        <button
+          onClick={() => setIsBreakdownOpen(true)}
+          className="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm text-left hover:border-indigo-400 dark:hover:border-indigo-500 hover:shadow-md hover:scale-[1.02] transition-all group relative overflow-hidden focus:outline-none focus:ring-2 focus:ring-indigo-500"
+        >
           <div className="flex items-center justify-between mb-2">
-            <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Questions Solved Today</span>
-            <CheckCircle className="w-5 h-5 text-emerald-600" />
+            <span className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+              Questions Solved
+            </span>
+            <div className="p-1.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 group-hover:bg-emerald-600 group-hover:text-white transition-colors">
+              <BarChart2 className="w-5 h-5" />
+            </div>
           </div>
-          <div className="text-3xl font-extrabold text-slate-900">
-            {dailyStats.questionsAttemptedToday} / {targetDailyQuestions}
+          <div className="flex items-baseline gap-2">
+            <div className="text-3xl font-extrabold text-slate-900 dark:text-slate-100">
+              {totalSolvedDisplay}
+            </div>
+            {allTimeAttempted > 0 && dailyStats.questionsAttemptedToday > 0 && (
+              <span className="text-xs font-bold text-emerald-600 dark:text-emerald-400">
+                (+{dailyStats.questionsAttemptedToday} today)
+              </span>
+            )}
           </div>
-          <p className="text-xs text-emerald-600 font-semibold mt-2">
-            {progressPercent}% of daily goal completed
-          </p>
-        </div>
+          <div className="flex items-center justify-between mt-2 pt-1 border-t border-slate-100 dark:border-slate-800">
+            <p className="text-xs text-indigo-600 dark:text-indigo-400 font-bold flex items-center gap-1 group-hover:translate-x-0.5 transition-transform">
+              <span>View Topic Breakdown</span>
+              <ArrowRight className="w-3.5 h-3.5" />
+            </p>
+            <span className="text-[10px] font-semibold text-slate-400 dark:text-slate-500">
+              Click to view
+            </span>
+          </div>
+        </button>
 
-        <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
+        {/* Metric 4: Days Until Exams */}
+        <div className="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm transition-colors">
           <div className="flex items-center justify-between mb-2">
-            <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Days Until GCSE Exams</span>
-            <Calendar className="w-5 h-5 text-purple-600" />
+            <span className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Days Until GCSE Exams</span>
+            <Calendar className="w-5 h-5 text-purple-600 dark:text-purple-400" />
           </div>
-          <div className="text-3xl font-extrabold text-slate-900">248 Days</div>
-          <p className="text-xs text-slate-500 mt-2">May/June Exam Season</p>
+          <div className="text-3xl font-extrabold text-slate-900 dark:text-slate-100">248 Days</div>
+          <p className="text-xs text-slate-500 dark:text-slate-400 mt-2">May/June Exam Season</p>
         </div>
 
       </div>
@@ -218,21 +256,21 @@ export default function Dashboard() {
         </div>
 
         {/* Right: Weakness Radar */}
-        <div className="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm flex flex-col justify-between">
+        <div className="bg-white dark:bg-slate-900 rounded-2xl p-6 border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col justify-between transition-colors">
           <div>
-            <h3 className="font-bold text-slate-900 text-base mb-4 flex items-center gap-2">
+            <h3 className="font-bold text-slate-900 dark:text-slate-100 text-base mb-4 flex items-center gap-2">
               <AlertCircle className="w-5 h-5 text-amber-500" />
               Identified Topic Gaps
             </h3>
             
             <div className="space-y-3">
               {recommendedTopics.map((rec, i) => (
-                <div key={i} className="p-3 rounded-xl bg-slate-50 border border-slate-200">
-                  <div className="flex items-center justify-between text-xs font-bold text-slate-900 mb-1">
+                <div key={i} className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
+                  <div className="flex items-center justify-between text-xs font-bold text-slate-900 dark:text-slate-100 mb-1">
                     <span>{rec.topicId === 'm-alg-2' ? 'Simultaneous Equations' : 'Quadratic Equations'}</span>
-                    <span className="text-amber-600">Priority: High</span>
+                    <span className="text-amber-600 dark:text-amber-400">Priority: High</span>
                   </div>
-                  <p className="text-[11px] text-slate-500">{rec.reason}</p>
+                  <p className="text-[11px] text-slate-500 dark:text-slate-400">{rec.reason}</p>
                 </div>
               ))}
             </div>
@@ -240,7 +278,7 @@ export default function Dashboard() {
 
           <Link
             href="/topics"
-            className="mt-4 text-center py-2 text-xs font-bold text-indigo-600 hover:text-indigo-800 transition-colors"
+            className="mt-4 text-center py-2 text-xs font-bold text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 dark:hover:text-indigo-300 transition-colors"
           >
             Explore Full Topic Matrix →
           </Link>
@@ -254,8 +292,12 @@ export default function Dashboard() {
         onClose={() => setIsQuickAssessmentOpen(false)}
       />
 
+      {/* Topic Performance Breakdown Modal */}
+      <TopicBreakdownModal
+        isOpen={isBreakdownOpen}
+        onClose={() => setIsBreakdownOpen(false)}
+      />
+
     </div>
   );
 }
-
-
