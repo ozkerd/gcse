@@ -1,7 +1,7 @@
 'use client';
 
 /**
- * Cloudflare Email Service Module
+ * Email Service Module
  * Dispatches HTML notifications from noreply@btpsec.com
  */
 export interface EmailPayload {
@@ -15,16 +15,16 @@ export class EmailService {
   private static FROM_EMAIL = 'noreply@btpsec.com';
 
   /**
-   * Dispatches email via Cloudflare Pages API endpoint or simulated client transport
+   * Dispatches email via API endpoint or simulated client transport
    */
   static async sendEmail(payload: EmailPayload): Promise<{ success: boolean; messageId: string }> {
     const fromAddr = payload.from || EmailService.FROM_EMAIL;
 
-    console.log(`[Cloudflare Email Dispatcher] From: ${fromAddr} -> To: ${payload.to}`);
-    console.log(`[Cloudflare Email Dispatcher] Subject: ${payload.subject}`);
+    console.log(`[Email Service] From: ${fromAddr} -> To: ${payload.to}`);
+    console.log(`[Email Service] Subject: ${payload.subject}`);
 
     try {
-      // Attempt sending via Cloudflare backend API route if deployed
+      // Attempt sending via backend API route if deployed
       const res = await fetch('/api/email/send', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -37,7 +37,7 @@ export class EmailService {
       });
 
       if (res.ok) {
-        return { success: true, messageId: `cf-${Date.now()}` };
+        return { success: true, messageId: `mail-${Date.now()}` };
       }
     } catch (e) {
       // Fallback for client-side demo execution
@@ -45,7 +45,7 @@ export class EmailService {
 
     return {
       success: true,
-      messageId: `cf-local-${Date.now()}`,
+      messageId: `mail-local-${Date.now()}`,
     };
   }
 
@@ -62,7 +62,7 @@ export class EmailService {
     const htmlContent = `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 24px; border: 1px solid #e2e8f0; rounded: 16px;">
         <div style="text-align: center; margin-bottom: 24px;">
-          <h1 style="color: #4f46e5; margin: 0;">gcse.primerllm.com</h1>
+          <h1 style="color: #4f46e5; margin: 0;">gcse mate</h1>
           <p style="color: #64748b; font-size: 14px; margin-top: 4px;">AI Adaptive GCSE Platform</p>
         </div>
 
@@ -84,7 +84,7 @@ export class EmailService {
         </ul>
 
         <div style="text-align: center; margin-top: 32px; pt-24 border-top: 1px solid #f1f5f9;">
-          <p style="color: #94a3b8; font-size: 12px;">Sent automatically by Cloudflare Email Routing from noreply@btpsec.com</p>
+          <p style="color: #94a3b8; font-size: 12px;">Sent automatically by gcse mate learning system</p>
         </div>
       </div>
     `;
@@ -106,7 +106,7 @@ export class EmailService {
     const htmlContent = `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 24px; border: 1px solid #e2e8f0;">
         <h2 style="color: #4f46e5;">Weekly Progress & Analysis Report</h2>
-        <p>Dear Parent, here is ${studentName}'s weekly learning summary on gcse.primerllm.com:</p>
+        <p>Dear Parent, here is ${studentName}'s weekly learning summary on gcse mate:</p>
         <ul>
           <li><strong>Questions Solved This Week:</strong> ${questionsAttempted}</li>
           <li><strong>Current Active Streak:</strong> ${streakDays} Days 🔥</li>

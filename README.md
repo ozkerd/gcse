@@ -1,6 +1,6 @@
-# gcse.primerllm.com — AI Adaptive GCSE Learning Platform
+# gcse mate — AI Adaptive GCSE Learning Platform
 
-`gcse.primerllm.com` is an end-to-end AI-powered adaptive GCSE revision, diagnostic testing, target grade tracking, and dynamic question generation platform built for Cloudflare Workers & Pages.
+`gcse mate` is an end-to-end AI-powered adaptive GCSE revision, diagnostic testing, target grade tracking, and dynamic question generation platform.
 
 ---
 
@@ -9,17 +9,17 @@
 1. **Student Dashboard & Target Grade Engine**: Set target grade goals (Grade 1–9), view daily revision progress, streak tracking, and estimated current level.
 2. **Diagnostic Placement Engine**: 10-15 question baseline test that evaluates current student grade and builds a custom revision timetable.
 3. **Adaptive AI Question Engine**: Continuously analyzes correct/incorrect answers, isolates knowledge gaps, and dynamically synthesizes fresh exam-style questions (with LaTeX formulas and mark schemes).
-4. **"Daha Fazla Bilgi" (Deep Conceptual Analysis)**: Instant educational breakdown providing concept overviews, step-by-step solutions, common GCSE exam pitfalls, examiner tips, and interactive micro-practice checks.
-5. **Question Crawler & Ingestion Tool**: Python ingestion script (`scripts/crawler/scrape_questions.py`) to crawl external question banks or parse past papers into Cloudflare D1.
+4. **Deep Conceptual Analysis**: Instant educational breakdown providing concept overviews, step-by-step solutions, common GCSE exam pitfalls, examiner tips, and interactive micro-practice checks.
+5. **Question Crawler & Ingestion Tool**: Ingestion script to crawl question banks or parse past papers into database.
 
 ---
 
 ## 🛠️ Tech Stack
 
 - **Frontend**: Next.js 14 (App Router) + Tailwind CSS + Lucide Icons + KaTeX (LaTeX Math Rendering)
-- **Backend / Edge**: Cloudflare Workers / Cloudflare Pages (`@cloudflare/next-on-pages`)
-- **Database**: Cloudflare D1 (Edge SQLite) + Drizzle ORM
-- **Deployment & Subdomain**: `gcse.primerllm.com` via Cloudflare DNS
+- **Backend / Edge**: Serverless & Edge API Routes
+- **Database**: D1 / SQLite + Drizzle ORM
+- **Deployment**: Edge Platform
 
 ---
 
@@ -40,24 +40,18 @@ Open [http://localhost:3000](http://localhost:3000) to view the application loca
 
 ---
 
-## ☁️ Deployment to Cloudflare & Domain Binding (`gcse.primerllm.com`)
+## ☁️ Deployment & Production Build
 
-### 1. Build and Preview Cloudflare Pages
+### 1. Build and Preview
+```bash
+npm run build
+npm run start
+```
+
+### 2. Edge Deploy
 ```bash
 npm run pages:build
-npm run preview
 ```
-
-### 2. Deploy to Cloudflare Pages / Workers
-```bash
-npx wrangler pages deploy .vercel/output/static --project-name gcse-primerllm
-```
-
-### 3. Subdomain Setup in Cloudflare Dashboard
-1. Go to **Cloudflare Dashboard** $\rightarrow$ **Workers & Pages**.
-2. Select `gcse-primerllm`.
-3. Go to **Custom Domains** $\rightarrow$ Add `gcse.primerllm.com`.
-4. Cloudflare automatically handles SSL/TLS and routes traffic to the Worker!
 
 ---
 

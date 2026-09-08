@@ -125534,7 +125534,7 @@
     "acceptableAnswers": [
       "Using Content Delivery Networks (CDNs) with traffic scrubbing and rate-limiting to filter out malicious packets",
       "traffic scrubbing and rate limiting",
-      "using Cloudflare / CDN to filter traffic",
+      "using CDN / reverse proxies to filter traffic",
       "using content delivery networks (cdns) with traffic scrubbing and rate-limiting to filter out malicious packets",
       "Using content delivery networks (cdns) with traffic scrubbing and rate-limiting to filter out malicious packets",
       "USING CONTENT DELIVERY NETWORKS (CDNS) WITH TRAFFIC SCRUBBING AND RATE-LIMITING TO FILTER OUT MALICIOUS PACKETS"

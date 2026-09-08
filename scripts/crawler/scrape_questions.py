@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-GCSE Question Bank Web Crawler & Ingestion Pipeline for gcse.primerllm.com
+GCSE Question Bank Web Crawler & Ingestion Pipeline for gcse mate
 Supports crawling & parsing questions from Corbettmaths, Maths Genie, PMT, and AQA/Edexcel past papers.
 """
 

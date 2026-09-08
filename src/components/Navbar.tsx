@@ -52,11 +52,11 @@ export const Navbar = () => {
               <Brain className="w-6 h-6" />
             </div>
             <div>
-              <div className="flex items-center gap-1.5 font-bold text-slate-900 text-lg leading-none">
+              <div className="flex items-center gap-1.5 font-bold text-slate-900 dark:text-slate-100 text-xl leading-none">
                 <span>gcse</span>
-                <span className="text-indigo-600 font-extrabold">.primerllm.com</span>
+                <span className="text-indigo-600 dark:text-indigo-400 font-extrabold">mate</span>
               </div>
-              <span className="text-[11px] font-medium text-slate-500 tracking-wide uppercase">AI Adaptive GCSE Platform</span>
+              <span className="text-[11px] font-medium text-slate-500 dark:text-slate-400 tracking-wide uppercase">AI Adaptive GCSE Platform</span>
             </div>
           </Link>
 
