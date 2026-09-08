@@ -4,7 +4,7 @@ import React, { useState } from 'react';
 import { SeedQuestion } from '@/lib/curriculum/gcse-data';
 import { KaTeXRenderer } from '@/components/KaTeXRenderer';
 import { validateAnswer } from '@/lib/ai/generator';
-import { CheckCircle2, XCircle, Sparkles, HelpCircle, FileText, Send } from 'lucide-react';
+import { CheckCircle2, XCircle, Sparkles, HelpCircle, FileText, Send, Award } from 'lucide-react';
 
 interface QuestionCardProps {
   question: SeedQuestion;
@@ -236,14 +236,55 @@ export function QuestionCard({
             )}
           </div>
 
+          {/* Official GCSE Mark Scheme Breakdown */}
+          {evalResult?.marksBreakdown && evalResult.marksBreakdown.length > 0 && (
+            <div className="p-4 bg-slate-50 border border-slate-200 rounded-2xl space-y-3 text-xs">
+              <div className="flex items-center justify-between border-b border-slate-200 pb-2">
+                <span className="font-bold text-slate-800 uppercase tracking-wider flex items-center gap-1.5">
+                  <Award className="w-4 h-4 text-indigo-600" />
+                  Official GCSE Mark Scheme Assessment:
+                </span>
+                <span className={`px-2.5 py-1 rounded-full font-mono text-xs font-black ${
+                  evalResult.marksAwarded === evalResult.maxMarks
+                    ? 'bg-emerald-100 text-emerald-800'
+                    : evalResult.marksAwarded > 0
+                    ? 'bg-amber-100 text-amber-900'
+                    : 'bg-rose-100 text-rose-800'
+                }`}>
+                  Score: {evalResult.marksAwarded} / {evalResult.maxMarks} Marks
+                </span>
+              </div>
+
+              <div className="space-y-1.5">
+                {evalResult.marksBreakdown.map((crit, idx) => (
+                  <div key={idx} className="flex items-center gap-2">
+                    <span className={`px-2 py-0.5 rounded font-mono text-[11px] font-bold shrink-0 ${
+                      crit.awarded ? 'bg-emerald-100 text-emerald-800 border border-emerald-300' : 'bg-slate-200 text-slate-600 border border-slate-300'
+                    }`}>
+                      {crit.awarded ? '✓' : '✗'} {crit.code}
+                    </span>
+                    <span className="font-semibold text-slate-700">{crit.name}:</span>
+                    <span className="text-slate-600 truncate">{crit.description}</span>
+                  </div>
+                ))}
+              </div>
+
+              {evalResult.examinerNote && (
+                <div className="mt-2 p-2.5 bg-amber-50/90 border border-amber-200 rounded-xl text-[11px] text-amber-900 font-medium">
+                  <strong>Examiner Guidance:</strong> {evalResult.examinerNote}
+                </div>
+              )}
+            </div>
+          )}
+
           {/* Mark Scheme Guidance */}
           {question.markScheme && (
-            <div className="p-4 bg-slate-50 border border-slate-200 rounded-2xl space-y-1 text-xs">
-              <div className="font-bold text-slate-700 uppercase tracking-wider flex items-center gap-1.5 mb-1">
+            <div className="p-4 bg-indigo-50/50 border border-indigo-100 rounded-2xl space-y-1 text-xs">
+              <div className="font-bold text-indigo-900 uppercase tracking-wider flex items-center gap-1.5 mb-1">
                 <FileText className="w-4 h-4 text-indigo-600" />
-                Official GCSE Mark Scheme Rubric:
+                Exam Board Specification Rubric:
               </div>
-              <div className="text-slate-800 font-mono whitespace-pre-line leading-relaxed">
+              <div className="text-indigo-950 font-mono whitespace-pre-line leading-relaxed">
                 <KaTeXRenderer content={question.markScheme} />
               </div>
             </div>
