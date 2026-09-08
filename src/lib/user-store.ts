@@ -327,7 +327,7 @@ export class UserStore {
     });
   }
 
-  private static CURRENT_CACHE_VERSION = 'v5_strict_20_80_pacing';
+  private static CURRENT_CACHE_VERSION = 'v6_authentic_gcse_exam_rubric';
 
   static getStoredQuestions(): SeedQuestion[] {
     const raw = getCookie('gcse_stored_questions');
