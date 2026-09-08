@@ -16,6 +16,7 @@ export default function ParentPortalPage() {
     date: new Date().toISOString().split('T')[0],
     questionsAttemptedToday: 0,
     questionsCorrectToday: 0,
+    studyMinutesToday: 0,
     streakDays: 4,
   });
 

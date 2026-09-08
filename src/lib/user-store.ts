@@ -14,14 +14,29 @@ export interface UserSession {
   schoolYear?: number; // e.g. 8, 9, 10, 11
   emailReminders?: boolean;
   parentProgressReports?: boolean;
+  dailyStudyGoalMinutes?: number; // Target daily study time (default: 30)
+  examDate?: string; // Target GCSE exam date (YYYY-MM-DD, default: 2027-05-10)
 }
 
 export interface DailyStats {
   date: string; // YYYY-MM-DD
   questionsAttemptedToday: number;
   questionsCorrectToday: number;
+  studyMinutesToday?: number; // Time spent studying today in minutes
   streakDays: number;
   lastActiveDate?: string; // YYYY-MM-DD
+}
+
+export interface ScheduledReview {
+  id: string;
+  topicId: string;
+  topicTitle: string;
+  subject: string;
+  scheduledDate: string; // YYYY-MM-DD
+  status: 'pending' | 'completed';
+  priority?: 'high' | 'medium' | 'low';
+  notes?: string;
+  targetQuestions?: number;
 }
 
 export interface TopicMasteryRecord {
@@ -38,6 +53,7 @@ const SESSION_COOKIE_KEY = 'gcse_user_session';
 const STATS_COOKIE_KEY = 'gcse_daily_stats';
 const MASTERY_COOKIE_KEY = 'gcse_topic_masteries';
 const ANSWERED_QUESTIONS_KEY = 'gcse_answered_questions';
+const SCHEDULED_REVIEWS_KEY = 'gcse_scheduled_reviews';
 
 const getTodayString = () => new Date().toISOString().split('T')[0];
 
@@ -47,13 +63,18 @@ const getYesterdayString = () => {
   return d.toISOString().split('T')[0];
 };
 
+const inMemoryCookies: Record<string, string> = {};
+
 function getCookie(name: string): string | null {
-  if (typeof document === 'undefined') return null;
+  if (typeof document === 'undefined') {
+    return inMemoryCookies[name] || null;
+  }
   const match = document.cookie.match(new RegExp('(^| )' + name + '=([^;]+)'));
-  return match ? decodeURIComponent(match[2]) : null;
+  return match ? decodeURIComponent(match[2]) : (inMemoryCookies[name] || null);
 }
 
 function setCookie(name: string, value: string, days = 365) {
+  inMemoryCookies[name] = value;
   if (typeof document === 'undefined') return;
   const date = new Date();
   date.setTime(date.getTime() + days * 24 * 60 * 60 * 1000);
@@ -65,7 +86,12 @@ export class UserStore {
     const raw = getCookie(SESSION_COOKIE_KEY);
     if (raw) {
       try {
-        return JSON.parse(raw);
+        const parsed = JSON.parse(raw);
+        return {
+          dailyStudyGoalMinutes: 30,
+          examDate: '2027-05-10',
+          ...parsed,
+        };
       } catch (e) {
         // ignore parse error
       }
@@ -78,6 +104,8 @@ export class UserStore {
       targetGrade: 6,
       emailReminders: true,
       parentProgressReports: true,
+      dailyStudyGoalMinutes: 30,
+      examDate: '2027-05-10',
     };
   }
 
@@ -97,7 +125,10 @@ export class UserStore {
       try {
         const stats: DailyStats = JSON.parse(raw);
         if (stats.date === today) {
-          return stats;
+          return {
+            studyMinutesToday: 0,
+            ...stats,
+          };
         } else {
           // New day check
           let newStreak = stats.streakDays;
@@ -109,6 +140,7 @@ export class UserStore {
             date: today,
             questionsAttemptedToday: 0,
             questionsCorrectToday: 0,
+            studyMinutesToday: 0,
             streakDays: newStreak,
             lastActiveDate: stats.lastActiveDate,
           };
@@ -124,6 +156,7 @@ export class UserStore {
       date: today,
       questionsAttemptedToday: 0,
       questionsCorrectToday: 0,
+      studyMinutesToday: 0,
       streakDays: 0,
     };
     UserStore.saveDailyStats(defaultStats);
@@ -135,6 +168,155 @@ export class UserStore {
     if (typeof window !== 'undefined') {
       window.dispatchEvent(new Event('gcse_stats_updated'));
     }
+  }
+
+  static addStudyMinutes(minutes: number): DailyStats {
+    const current = UserStore.getDailyStats();
+    const updated: DailyStats = {
+      ...current,
+      studyMinutesToday: Math.max(0, (current.studyMinutesToday || 0) + minutes),
+    };
+    UserStore.saveDailyStats(updated);
+    return updated;
+  }
+
+  static setDailyStudyGoal(minutes: number) {
+    const session = UserStore.getSession();
+    UserStore.saveSession({ ...session, dailyStudyGoalMinutes: Math.max(5, minutes) });
+  }
+
+  static setExamDate(dateStr: string) {
+    const session = UserStore.getSession();
+    UserStore.saveSession({ ...session, examDate: dateStr });
+  }
+
+  static getDaysUntilExam(): number {
+    const session = UserStore.getSession();
+    const targetDateStr = session.examDate || '2027-05-10';
+    const target = new Date(targetDateStr);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    target.setHours(0, 0, 0, 0);
+    const diffMs = target.getTime() - today.getTime();
+    const diffDays = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
+    return Math.max(0, diffDays);
+  }
+
+  static getScheduledReviews(): ScheduledReview[] {
+    const raw = getCookie(SCHEDULED_REVIEWS_KEY);
+    if (raw) {
+      try {
+        const parsed = JSON.parse(raw);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          return parsed;
+        }
+      } catch (e) {
+        // ignore
+      }
+    }
+    // Default initial timetable aligned with current date
+    const today = getTodayString();
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    const tomorrowStr = tomorrow.toISOString().split('T')[0];
+
+    const in3Days = new Date();
+    in3Days.setDate(in3Days.getDate() + 3);
+    const in3DaysStr = in3Days.toISOString().split('T')[0];
+
+    const in5Days = new Date();
+    in5Days.setDate(in5Days.getDate() + 5);
+    const in5DaysStr = in5Days.toISOString().split('T')[0];
+
+    const defaults: ScheduledReview[] = [
+      {
+        id: 'rev-today-1',
+        topicId: 'm-alg-1',
+        topicTitle: 'Quadratic Equations & Factoring',
+        subject: 'Mathematics',
+        scheduledDate: today,
+        status: 'pending',
+        priority: 'high',
+        targetQuestions: 15,
+        notes: 'Reinforce quadratic formula and factoring techniques'
+      },
+      {
+        id: 'rev-tom-1',
+        topicId: 'p-1',
+        topicTitle: 'Energy Conservation & Efficiency',
+        subject: 'Physics',
+        scheduledDate: tomorrowStr,
+        status: 'pending',
+        priority: 'medium',
+        targetQuestions: 15,
+        notes: 'Review kinetic and gravitational potential energy calculations'
+      },
+      {
+        id: 'rev-3d-1',
+        topicId: 'ch-1',
+        topicTitle: 'Atomic Structure & Periodic Trends',
+        subject: 'Chemistry',
+        scheduledDate: in3DaysStr,
+        status: 'pending',
+        priority: 'medium',
+        targetQuestions: 15,
+        notes: 'Check electron configurations and ion formation'
+      },
+      {
+        id: 'rev-5d-1',
+        topicId: 'eng-lit-1',
+        topicTitle: 'Macbeth: Ambition & Guilt',
+        subject: 'English Literature',
+        scheduledDate: in5DaysStr,
+        status: 'pending',
+        priority: 'high',
+        targetQuestions: 10,
+        notes: 'Memorize key quotes for Act 1 and Act 3'
+      }
+    ];
+    UserStore.saveScheduledReviews(defaults);
+    return defaults;
+  }
+
+  static saveScheduledReviews(reviews: ScheduledReview[]) {
+    setCookie(SCHEDULED_REVIEWS_KEY, JSON.stringify(reviews));
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new Event('gcse_reviews_updated'));
+    }
+  }
+
+  static addScheduledReview(review: Omit<ScheduledReview, 'id'>): ScheduledReview {
+    const existing = UserStore.getScheduledReviews();
+    const newReview: ScheduledReview = {
+      ...review,
+      id: `rev-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`,
+    };
+    const updated = [newReview, ...existing];
+    UserStore.saveScheduledReviews(updated);
+    return newReview;
+  }
+
+  static toggleReviewCompleted(id: string) {
+    const existing = UserStore.getScheduledReviews();
+    const updated: ScheduledReview[] = existing.map(r => {
+      if (r.id === id) {
+        const nextStatus: 'pending' | 'completed' = r.status === 'completed' ? 'pending' : 'completed';
+        return { ...r, status: nextStatus };
+      }
+      return r;
+    });
+    UserStore.saveScheduledReviews(updated);
+  }
+
+  static deleteScheduledReview(id: string) {
+    const existing = UserStore.getScheduledReviews();
+    const updated = existing.filter(r => r.id !== id);
+    UserStore.saveScheduledReviews(updated);
+  }
+
+  static getReviewsDueToday(): ScheduledReview[] {
+    const today = getTodayString();
+    return UserStore.getScheduledReviews().filter(r => r.scheduledDate === today && r.status !== 'completed');
   }
 
   static recordQuestionAttempt(isCorrect: boolean, questionId?: string): DailyStats {
@@ -155,13 +337,18 @@ export class UserStore {
       newStreak = 1;
     }
 
+    const newAttempted = current.questionsAttemptedToday + 1;
+    // Auto-credit ~1.5 - 2 minutes study time per question attempted if not already higher
+    const autoMinutes = Math.max(current.studyMinutesToday || 0, Math.round(newAttempted * 1.5));
+
     const updated: DailyStats = {
       ...current,
       date: today,
       lastActiveDate: today,
       streakDays: newStreak,
-      questionsAttemptedToday: current.questionsAttemptedToday + 1,
+      questionsAttemptedToday: newAttempted,
       questionsCorrectToday: isCorrect ? current.questionsCorrectToday + 1 : current.questionsCorrectToday,
+      studyMinutesToday: autoMinutes,
     };
     UserStore.saveDailyStats(updated);
     return updated;
