@@ -44,7 +44,19 @@ function isMathOrCalculationQuestion(q: SeedQuestion): boolean {
   // Check if text or correct answer has math notation
   const text = q.questionText || '';
   const ans = q.correctAnswer || '';
-  if (text.includes('$') || text.includes('\\sqrt') || text.includes('^2') || text.includes('^3') || ans.includes('√') || ans.includes('π') || ans.includes('°')) {
+  if (
+    text.includes('$') ||
+    text.includes('\\sqrt') ||
+    text.includes('^') ||
+    text.includes('²') ||
+    text.includes('³') ||
+    ans.includes('√') ||
+    ans.includes('π') ||
+    ans.includes('°') ||
+    ans.includes('^') ||
+    ans.includes('²') ||
+    ans.includes('³')
+  ) {
     return true;
   }
   return false;
@@ -69,16 +81,17 @@ export function QuestionCard({
 
   // Clean Unicode math helper symbols (only rendered when needed)
   const mathSymbols = [
-    { label: '√', value: '√', title: 'Square Root' },
-    { label: 'π', value: 'π', title: 'Pi' },
-    { label: 'x²', value: '²', title: 'Squared' },
-    { label: 'x³', value: '³', title: 'Cubed' },
-    { label: '±', value: '±', title: 'Plus-minus' },
-    { label: '°', value: '°', title: 'Degrees' },
-    { label: 'θ', value: 'θ', title: 'Theta' },
-    { label: '×', value: '×', title: 'Multiply' },
-    { label: '÷', value: '÷', title: 'Divide' },
-    { label: '≈', value: '≈', title: 'Approximately' },
+    { label: '^', value: '^', title: 'Power / Exponent (^)' },
+    { label: 'x²', value: '²', title: 'Squared (²)' },
+    { label: 'x³', value: '³', title: 'Cubed (³)' },
+    { label: '√', value: '√', title: 'Square Root (√)' },
+    { label: 'π', value: 'π', title: 'Pi (π)' },
+    { label: '±', value: '±', title: 'Plus-minus (±)' },
+    { label: '°', value: '°', title: 'Degrees (°)' },
+    { label: 'θ', value: 'θ', title: 'Theta (θ)' },
+    { label: '×', value: '×', title: 'Multiply (×)' },
+    { label: '÷', value: '÷', title: 'Divide (÷)' },
+    { label: '≈', value: '≈', title: 'Approximately (≈)' },
   ];
 
   const handleInsertSymbol = (sym: string) => {

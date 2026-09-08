@@ -1577,9 +1577,55 @@ export function validateAnswer(question: SeedQuestion, userAnswer: string): Eval
                          (question.questionText || '').toLowerCase().includes('prove') ||
                          (question.questionText || '').toLowerCase().includes('working');
 
+  // Helper: Normalize math expressions (strip LaTeX formatting, Unicode symbols, spaces, parentheses)
+  // Accepts both ^ and unicode powers (², ³, ⁴, ⁻², etc.) interchangeably
+  const normalizeMath = (s: string) => {
+    const supMap: Record<string, string> = {
+      '⁰': '0', '¹': '1', '²': '2', '³': '3', '⁴': '4',
+      '⁵': '5', '⁶': '6', '⁷': '7', '⁸': '8', '⁹': '9',
+      'ⁿ': 'n', '⁺': '+', '⁻': '-'
+    };
+
+    return s
+      .toLowerCase()
+      // Normalize contiguous unicode superscripts (e.g. ², ³, ⁴, ⁻², ^²) to ^n
+      .replace(/\^?([⁰¹²³⁴⁵⁶⁷⁸⁹ⁿ⁺⁻]+)/g, (_, chars) => {
+        const inner = chars.split('').map((c: string) => supMap[c] || c).join('');
+        return '^' + inner;
+      })
+      // Normalize Python-style power ** to ^
+      .replace(/\*\*/g, '^')
+      // Normalize roots, pi, etc.
+      .replace(/√/g, 'sqrt')
+      .replace(/\\sqrt/g, 'sqrt')
+      .replace(/π/g, 'pi')
+      .replace(/\\pi/g, 'pi')
+      .replace(/°/g, '')
+      .replace(/\\circ/g, '')
+      .replace(/×/g, '*')
+      .replace(/\\times/g, '*')
+      .replace(/\\cdot/g, '*')
+      .replace(/÷/g, '/')
+      .replace(/\\div/g, '/')
+      .replace(/±/g, '+-')
+      .replace(/\\pm/g, '+-')
+      .replace(/≈/g, '=')
+      .replace(/\\approx/g, '=')
+      .replace(/θ/g, 'theta')
+      .replace(/\\theta/g, 'theta')
+      .replace(/\\frac\{([^}]+)\}\{([^}]+)\}/g, '$1/$2')
+      // Normalize 'x' between numbers or powers to * (e.g. 2^2 x 5 -> 2^2*5)
+      .replace(/(\d|\^[\d]+|[²³⁴⁵⁶⁷⁸⁹])\s*[xX]\s*(\d)/g, '$1*$2')
+      // Normalize LaTeX powers like ^{2} to ^2
+      .replace(/\^\{([^}]+)\}/g, '^$1')
+      .replace(/[\$\{\}\\\s\(\)]/g, '');
+  };
+
   // 1. Multiple Choice Questions (1 Mark - B1)
   if (question.questionType === 'multiple_choice') {
-    const isOk = userAnswer === question.correctAnswer || userTrim === correctTrim;
+    const isOk = userAnswer === question.correctAnswer ||
+                 userTrim === correctTrim ||
+                 normalizeMath(userAnswer) === normalizeMath(question.correctAnswer);
     return {
       isCorrect: isOk,
       marksAwarded: isOk ? 1 : 0,
@@ -1595,33 +1641,6 @@ export function validateAnswer(question: SeedQuestion, userAnswer: string): Eval
       feedback: isOk ? 'Correct answer! 🎉 Full 1/1 Mark awarded.' : `Incorrect. The correct option is: ${question.correctAnswer}`
     };
   }
-
-  // Helper: Normalize math expressions (strip LaTeX formatting, Unicode symbols, spaces, parentheses)
-  const normalizeMath = (s: string) => {
-    return s
-      .toLowerCase()
-      .replace(/√/g, 'sqrt')
-      .replace(/\\sqrt/g, 'sqrt')
-      .replace(/π/g, 'pi')
-      .replace(/\\pi/g, 'pi')
-      .replace(/²/g, '^2')
-      .replace(/³/g, '^3')
-      .replace(/°/g, '')
-      .replace(/\\circ/g, '')
-      .replace(/×/g, '*')
-      .replace(/\\times/g, '*')
-      .replace(/\\cdot/g, '*')
-      .replace(/÷/g, '/')
-      .replace(/\\div/g, '/')
-      .replace(/±/g, '+-')
-      .replace(/\\pm/g, '+-')
-      .replace(/≈/g, '=')
-      .replace(/\\approx/g, '=')
-      .replace(/θ/g, 'theta')
-      .replace(/\\theta/g, 'theta')
-      .replace(/\\frac\{([^}]+)\}\{([^}]+)\}/g, '$1/$2')
-      .replace(/[\$\{\}\\\s\(\)]/g, '');
-  };
 
   const normUser = normalizeMath(userRaw);
   const normCorrect = normalizeMath(correctRaw);
@@ -1768,23 +1787,42 @@ export function validateAnswer(question: SeedQuestion, userAnswer: string): Eval
 
   // 3. Numerical Comparison with Tolerance & GCSE Unit Rules
   const stripUnits = (s: string) => {
+    const supMap: Record<string, string> = {
+      '⁰': '0', '¹': '1', '²': '2', '³': '3', '⁴': '4',
+      '⁵': '5', '⁶': '6', '⁷': '7', '⁸': '8', '⁹': '9',
+      'ⁿ': 'n', '⁺': '+', '⁻': '-'
+    };
+
     return s
       .toLowerCase()
+      .replace(/\^?([⁰¹²³⁴⁵⁶⁷⁸⁹ⁿ⁺⁻]+)/g, (_, chars) => {
+        const inner = chars.split('').map((c: string) => supMap[c] || c).join('');
+        return '^' + inner;
+      })
       .replace(/°/g, '')
       .replace(/\\circ/g, '')
-      .replace(/\b(cm|m|km|kg|g|s|j|kj|w|v|a|n|pa|hz|mol|m\/s|m\/s\^2|degrees|°c|%)\b/gi, '')
-      .replace(/[^0-9\.\-\/]/g, '')
+      // Strip units with power first (cm^2, m^2, cm^3, m^3, m/s^2, etc.)
+      .replace(/\b(cm\^2|m\^2|km\^2|mm\^2|cm\^3|m\^3|km\^3|mm\^3|m\/s\^2|m\/s|ms\^-1|ms\^-2)\b/gi, '')
+      .replace(/\b(cm|m|km|kg|g|s|j|kj|mj|w|kw|mw|v|kv|mv|a|ma|n|kn|pa|kpa|mpa|hz|khz|mhz|ghz|mol|degrees|°c|%)\b/gi, '')
+      .replace(/[^0-9\.\-\/\^]/g, '')
       .trim();
   };
 
   const parseFractionOrFloat = (str: string): number => {
-    if (str.includes('/')) {
-      const parts = str.split('/');
+    const s = str.trim();
+    if (/^-?\d+(?:\.\d+)?\/-?\d+(?:\.\d+)?$/.test(s)) {
+      const parts = s.split('/');
       const num = parseFloat(parts[0]);
       const den = parseFloat(parts[1]);
       if (!isNaN(num) && !isNaN(den) && den !== 0) return num / den;
     }
-    return parseFloat(str);
+    if (/^-?\d+(?:\.\d+)?\^-?\d+(?:\.\d+)?$/.test(s)) {
+      const parts = s.split('^');
+      const base = parseFloat(parts[0]);
+      const exp = parseFloat(parts[1]);
+      if (!isNaN(base) && !isNaN(exp)) return Math.pow(base, exp);
+    }
+    return parseFloat(s);
   };
 
   const userNum = parseFractionOrFloat(stripUnits(userRaw));
