@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { Award, Sparkles, TrendingUp, Calendar, AlertCircle, ArrowRight, CheckCircle, Zap, GraduationCap, BarChart2, Clock, Bell, Play } from 'lucide-react';
+import { Award, Sparkles, TrendingUp, Calendar, AlertCircle, ArrowRight, CheckCircle, Zap, GraduationCap, BarChart2, BarChart3, Lock, Clock, Bell, Play } from 'lucide-react';
 import { AdaptiveEngine } from '@/lib/adaptive/engine';
 import { UserStore, UserSession, DailyStats, ScheduledReview } from '@/lib/user-store';
 import { SearchBar } from '@/components/SearchBar';
@@ -152,6 +152,16 @@ export default function Dashboard() {
                 </select>
               </div>
             </div>
+
+            <Link
+              href="/stats"
+              className="flex items-center gap-1.5 px-3 py-2.5 bg-slate-100 dark:bg-slate-800 hover:bg-indigo-50 dark:hover:bg-indigo-950/40 text-slate-600 dark:text-slate-300 hover:text-indigo-600 dark:hover:text-indigo-400 border border-slate-200 dark:border-slate-700 rounded-2xl text-xs font-semibold transition-all shadow-xs"
+              title="Platform Canlı Ziyaretçi & User-Agent İstatistikleri (/stats)"
+            >
+              <BarChart3 className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
+              <span>Platform Stats</span>
+              <Lock className="w-3 h-3 text-slate-400" />
+            </Link>
           </div>
         </div>
 
