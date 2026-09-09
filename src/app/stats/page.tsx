@@ -4,7 +4,6 @@ import React, { useState, useEffect, useCallback } from 'react';
 import {
   Lock,
   Unlock,
-  ShieldCheck,
   Users,
   Eye,
   Calendar,
@@ -12,10 +11,8 @@ import {
   Monitor,
   Tablet,
   RefreshCw,
-  Clock,
   Globe,
   ExternalLink,
-  ChevronRight,
   TrendingUp,
   Activity,
 } from 'lucide-react';
@@ -102,7 +99,7 @@ export default function StatsPage() {
         // Token expired or invalid
         sessionStorage.removeItem('gcse_stats_token');
         setIsAuthenticated(false);
-        setAuthError('Oturum süresi doldu. Lütfen tekrar şifre giriniz.');
+        setAuthError('Session expired. Please enter your password again.');
         return;
       }
 
@@ -149,10 +146,10 @@ export default function StatsPage() {
         setPasswordInput('');
         fetchStats(json.token);
       } else {
-        setAuthError(json.error || 'Geçersiz şifre! Lütfen tekrar deneyiniz.');
+        setAuthError(json.error || 'Invalid password! Please try again.');
       }
     } catch {
-      setAuthError('Bağlantı hatası oluştu.');
+      setAuthError('Connection error occurred.');
     } finally {
       setIsAuthenticating(false);
     }
@@ -174,22 +171,22 @@ export default function StatsPage() {
           </div>
 
           <h1 className="text-2xl font-bold text-center text-slate-900 dark:text-slate-100">
-            gcse mate İstatistikleri
+            gcse mate Platform Analytics
           </h1>
           <p className="text-sm text-slate-500 dark:text-slate-400 text-center mt-2 mb-6">
-            Bu ekran platform yöneticilerine özeldir. Devam etmek için şifrenizi giriniz.
+            Restricted administrator portal. Enter access password to proceed.
           </p>
 
           <form onSubmit={handleLogin} className="space-y-4">
             <div>
               <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-2">
-                Erişim Şifresi
+                Access Password
               </label>
               <input
                 type="password"
                 value={passwordInput}
                 onChange={(e) => setPasswordInput(e.target.value)}
-                placeholder="Şifreyi giriniz..."
+                placeholder="Enter password..."
                 autoFocus
                 className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all"
               />
@@ -209,19 +206,19 @@ export default function StatsPage() {
               {isAuthenticating ? (
                 <>
                   <RefreshCw className="w-4 h-4 animate-spin" />
-                  Doğrulanıyor...
+                  Verifying...
                 </>
               ) : (
                 <>
                   <Unlock className="w-4 h-4" />
-                  Giriş Yap
+                  Unlock Dashboard
                 </>
               )}
             </button>
           </form>
 
           <p className="text-[11px] text-center text-slate-400 dark:text-slate-500 mt-5">
-            Varsayılan yönetici şifresi: <code className="bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 rounded text-indigo-600 dark:text-indigo-400 font-mono">gcse2026</code>
+            Default administrator password: <code className="bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 rounded text-indigo-600 dark:text-indigo-400 font-mono">gcse2026</code>
           </p>
         </div>
       </div>
@@ -236,15 +233,15 @@ export default function StatsPage() {
         <div>
           <div className="flex items-center gap-2.5">
             <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-slate-100 tracking-tight">
-              Canlı Ziyaretçi & Platform Analizi
+              Live Visitor & Platform Analytics
             </h1>
             <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-100 dark:bg-emerald-950/80 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800">
               <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-              Canlı Takip Aktif
+              Live Tracking Active
             </span>
           </div>
           <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
-            gcse mate platformuna giriş yapan tekil kullanıcılar, cihaz türleri ve User-Agent dağılımı.
+            Real-time unique visitors, hardware breakdown, and User-Agent distribution across gcse mate.
           </p>
         </div>
 
@@ -257,7 +254,7 @@ export default function StatsPage() {
                 : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border-slate-200 dark:border-slate-700'
             }`}
           >
-            {autoRefresh ? 'Otomatik (15sn)' : 'Manuel'}
+            {autoRefresh ? 'Auto (15s)' : 'Manual'}
           </button>
 
           <button
@@ -266,16 +263,16 @@ export default function StatsPage() {
             className="flex items-center gap-1.5 px-3.5 py-1.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-xs font-semibold text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700 transition-all shadow-sm"
           >
             <RefreshCw className={`w-3.5 h-3.5 ${isLoadingStats ? 'animate-spin text-indigo-600' : ''}`} />
-            Yenile
+            Refresh
           </button>
 
           <button
             onClick={handleLogout}
             className="flex items-center gap-1.5 px-3.5 py-1.5 bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-900 rounded-lg text-xs font-semibold text-rose-600 dark:text-rose-400 hover:bg-rose-100 dark:hover:bg-rose-900/60 transition-all"
-            title="Oturumu kapat ve sayfayı kilitle"
+            title="Log out and lock dashboard"
           >
             <Lock className="w-3.5 h-3.5" />
-            Kilitle
+            Lock Portal
           </button>
         </div>
       </div>
@@ -286,7 +283,7 @@ export default function StatsPage() {
         <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 shadow-sm hover:shadow-md transition-shadow">
           <div className="flex items-center justify-between">
             <span className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
-              Bugün Tekil Kişi
+              Unique Visitors Today
             </span>
             <div className="p-2 bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 rounded-xl">
               <Users className="w-5 h-5" />
@@ -296,10 +293,10 @@ export default function StatsPage() {
             <span className="text-3xl font-black text-slate-900 dark:text-slate-100">
               {analytics ? analytics.today.uniqueVisitors.toLocaleString() : '—'}
             </span>
-            <span className="text-xs text-slate-500 dark:text-slate-400">farklı kişi</span>
+            <span className="text-xs text-slate-500 dark:text-slate-400">unique people</span>
           </div>
           <div className="mt-2 text-xs text-slate-500 dark:text-slate-400">
-            Sayfa Görüntüleme: <span className="font-semibold text-slate-700 dark:text-slate-300">{analytics ? analytics.today.pageviews : 0}</span>
+            Pageviews: <span className="font-semibold text-slate-700 dark:text-slate-300">{analytics ? analytics.today.pageviews : 0}</span>
           </div>
         </div>
 
@@ -307,7 +304,7 @@ export default function StatsPage() {
         <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 shadow-sm hover:shadow-md transition-shadow">
           <div className="flex items-center justify-between">
             <span className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
-              Bu Hafta (Son 7 Gün)
+              This Week (Last 7 Days)
             </span>
             <div className="p-2 bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 rounded-xl">
               <Calendar className="w-5 h-5" />
@@ -317,10 +314,10 @@ export default function StatsPage() {
             <span className="text-3xl font-black text-slate-900 dark:text-slate-100">
               {analytics ? analytics.thisWeek.uniqueVisitors.toLocaleString() : '—'}
             </span>
-            <span className="text-xs text-slate-500 dark:text-slate-400">farklı kişi</span>
+            <span className="text-xs text-slate-500 dark:text-slate-400">unique people</span>
           </div>
           <div className="mt-2 text-xs text-slate-500 dark:text-slate-400">
-            Haftalık Görüntüleme: <span className="font-semibold text-slate-700 dark:text-slate-300">{analytics ? analytics.thisWeek.pageviews : 0}</span>
+            Weekly Impressions: <span className="font-semibold text-slate-700 dark:text-slate-300">{analytics ? analytics.thisWeek.pageviews : 0}</span>
           </div>
         </div>
 
@@ -328,7 +325,7 @@ export default function StatsPage() {
         <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 shadow-sm hover:shadow-md transition-shadow">
           <div className="flex items-center justify-between">
             <span className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
-              Tüm Zamanlar Tekil
+              All-Time Unique Visitors
             </span>
             <div className="p-2 bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 rounded-xl">
               <Globe className="w-5 h-5" />
@@ -338,10 +335,10 @@ export default function StatsPage() {
             <span className="text-3xl font-black text-slate-900 dark:text-slate-100">
               {analytics ? analytics.allTime.uniqueVisitors.toLocaleString() : '—'}
             </span>
-            <span className="text-xs text-slate-500 dark:text-slate-400">farklı kişi</span>
+            <span className="text-xs text-slate-500 dark:text-slate-400">unique people</span>
           </div>
           <div className="mt-2 text-xs text-slate-500 dark:text-slate-400">
-            Toplam Ziyaretçi Havuzu
+            Total Visitor Pool
           </div>
         </div>
 
@@ -349,7 +346,7 @@ export default function StatsPage() {
         <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 shadow-sm hover:shadow-md transition-shadow">
           <div className="flex items-center justify-between">
             <span className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
-              Toplam Görüntüleme
+              Total Pageviews
             </span>
             <div className="p-2 bg-violet-50 dark:bg-violet-950/60 text-violet-600 dark:text-violet-400 rounded-xl">
               <Eye className="w-5 h-5" />
@@ -359,26 +356,26 @@ export default function StatsPage() {
             <span className="text-3xl font-black text-slate-900 dark:text-slate-100">
               {analytics ? analytics.allTime.pageviews.toLocaleString() : '—'}
             </span>
-            <span className="text-xs text-slate-500 dark:text-slate-400">gösterim</span>
+            <span className="text-xs text-slate-500 dark:text-slate-400">impressions</span>
           </div>
           <div className="mt-2 text-xs text-slate-500 dark:text-slate-400">
-            Son senkron: <span className="font-semibold">{lastRefreshed.toLocaleTimeString('tr-TR')}</span>
+            Last synced: <span className="font-semibold">{lastRefreshed.toLocaleTimeString('en-GB')}</span>
           </div>
         </div>
       </div>
 
       {/* Main Breakdown Section */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* Device & User-Agent Combinations (%65 iPhone Safari vb.) */}
+        {/* Device & User-Agent Combinations (%65 iPhone Safari, etc.) */}
         <div className="lg:col-span-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 shadow-sm">
           <div className="flex items-center justify-between mb-5">
             <div>
               <h2 className="text-lg font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
                 <Smartphone className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
-                Cihaz & User-Agent Kombinasyonu Dağılımı
+                Device & User-Agent Combinations
               </h2>
               <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                Kullanıcıların kullandığı donanım ve tarayıcı bileşimi (örn. iPhone Safari, Windows Chrome)
+                Hardware model and browser composition (e.g. iPhone Safari, Windows Chrome)
               </p>
             </div>
           </div>
@@ -398,7 +395,7 @@ export default function StatsPage() {
                     </div>
                     <div className="flex items-center gap-3">
                       <span className="text-xs text-slate-500 dark:text-slate-400">
-                        {item.count} ziyaret
+                        {item.count} visits
                       </span>
                       <span className="font-bold text-slate-900 dark:text-slate-100 w-12 text-right">
                         %{item.percentage}
@@ -425,7 +422,7 @@ export default function StatsPage() {
             </div>
           ) : (
             <div className="text-center py-12 text-sm text-slate-400">
-              Henüz User-Agent kaydı bulunamadı. Kullanıcılar siteye girdikçe otomatik listelenecektir.
+              No User-Agent records captured yet. Will update as visitors browse the platform.
             </div>
           )}
         </div>
@@ -436,7 +433,7 @@ export default function StatsPage() {
           <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 shadow-sm">
             <h2 className="text-lg font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2 mb-4">
               <Monitor className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
-              Cihaz Türü
+              Device Category
             </h2>
 
             {analytics?.deviceBreakdown && analytics.deviceBreakdown.length > 0 ? (
@@ -458,28 +455,28 @@ export default function StatsPage() {
                           <Icon className="w-4 h-4" />
                         </div>
                         <span className="font-semibold text-sm text-slate-800 dark:text-slate-200">
-                          {item.label === 'Mobile' ? 'Mobil' : item.label === 'Desktop' ? 'Masaüstü' : 'Tablet'}
+                          {item.label}
                         </span>
                       </div>
                       <div className="text-right">
                         <div className="font-bold text-sm text-slate-900 dark:text-slate-100">
                           %{item.percentage}
                         </div>
-                        <div className="text-[11px] text-slate-400">{item.count} kişi</div>
+                        <div className="text-[11px] text-slate-400">{item.count} visitors</div>
                       </div>
                     </div>
                   );
                 })}
               </div>
             ) : (
-              <div className="text-sm text-slate-400 py-4 text-center">Veri bekleniyor...</div>
+              <div className="text-sm text-slate-400 py-4 text-center">Awaiting data...</div>
             )}
           </div>
 
           {/* OS Breakdown */}
           <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 shadow-sm">
             <h2 className="text-base font-bold text-slate-900 dark:text-slate-100 mb-3">
-              İşletim Sistemleri (OS)
+              Operating Systems (OS)
             </h2>
             <div className="space-y-2">
               {analytics?.osBreakdown?.slice(0, 5).map((os) => (
@@ -499,10 +496,10 @@ export default function StatsPage() {
           <div>
             <h2 className="text-lg font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
               <TrendingUp className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
-              En Çok Ziyaret Edilen Sayfalar & Soru Alanları
+              Most Visited Pages & Practice Areas
             </h2>
             <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-              Kullanıcıların platformda en çok vakit geçirdiği modüller ve sayfalar
+              Modules and question areas where users spend the most revision time
             </p>
           </div>
         </div>
@@ -512,10 +509,10 @@ export default function StatsPage() {
             <table className="w-full text-left text-sm">
               <thead>
                 <tr className="border-b border-slate-200 dark:border-slate-800 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
-                  <th className="py-3 px-3">Sayfa Yolu</th>
-                  <th className="py-3 px-3 text-right">Görüntüleme</th>
-                  <th className="py-3 px-3 text-right">Tekil Ziyaretçi</th>
-                  <th className="py-3 px-3 text-right">Trafik Oranı</th>
+                  <th className="py-3 px-3">Page Path</th>
+                  <th className="py-3 px-3 text-right">Pageviews</th>
+                  <th className="py-3 px-3 text-right">Unique Visitors</th>
+                  <th className="py-3 px-3 text-right">Traffic Share</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 dark:divide-slate-800/60">
@@ -544,7 +541,7 @@ export default function StatsPage() {
             </table>
           </div>
         ) : (
-          <div className="text-center py-8 text-sm text-slate-400">Henüz sayfa ziyareti kaydedilmedi.</div>
+          <div className="text-center py-8 text-sm text-slate-400">No page visits recorded yet.</div>
         )}
       </div>
 
@@ -554,10 +551,10 @@ export default function StatsPage() {
           <div>
             <h2 className="text-lg font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
               <Activity className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
-              Canlı Ziyaretçi Akışı (Son Girişler)
+              Live Visitor Stream (Recent Hits)
             </h2>
             <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-              Siteye anlık giren ziyaretçilerin donanım ve sayfa bilgileri
+              Real-time device and route hits across the platform
             </p>
           </div>
         </div>
@@ -567,11 +564,11 @@ export default function StatsPage() {
             <table className="w-full text-left text-xs">
               <thead>
                 <tr className="border-b border-slate-200 dark:border-slate-800 text-[11px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
-                  <th className="py-2.5 px-3">Zaman</th>
-                  <th className="py-2.5 px-3">Tekil ID</th>
-                  <th className="py-2.5 px-3">Cihaz & Tarayıcı</th>
-                  <th className="py-2.5 px-3">Ziyaret Edilen Sayfa</th>
-                  <th className="py-2.5 px-3">Konum</th>
+                  <th className="py-2.5 px-3">Time</th>
+                  <th className="py-2.5 px-3">Visitor ID</th>
+                  <th className="py-2.5 px-3">Device & Browser</th>
+                  <th className="py-2.5 px-3">Visited Route</th>
+                  <th className="py-2.5 px-3">Location</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 dark:divide-slate-800/60 font-mono">
@@ -580,7 +577,7 @@ export default function StatsPage() {
                   return (
                     <tr key={evt.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/30">
                       <td className="py-2.5 px-3 text-slate-500 whitespace-nowrap">
-                        {date.toLocaleTimeString('tr-TR')}
+                        {date.toLocaleTimeString('en-GB')}
                       </td>
                       <td className="py-2.5 px-3 text-slate-700 dark:text-slate-300 font-semibold">
                         {evt.visitorId}
@@ -601,7 +598,7 @@ export default function StatsPage() {
             </table>
           </div>
         ) : (
-          <div className="text-center py-8 text-sm text-slate-400">Henüz ziyaret akışı oluşmadı.</div>
+          <div className="text-center py-8 text-sm text-slate-400">No visitor events recorded yet.</div>
         )}
       </div>
     </div>

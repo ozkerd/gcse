@@ -116,26 +116,6 @@ export default function Dashboard() {
                 : `Welcome back, ${session.name}! View daily goals and track your path to Grade ${session.targetGrade}.`}
             </p>
           </div>
-
-          {/* Compact Target Grade & School Year Badge */}
-          <div className="flex items-center gap-2 shrink-0">
-            <button
-              onClick={() => setIsTargetModalOpen(true)}
-              className="flex items-center gap-2.5 px-4 py-2.5 bg-gradient-to-r from-purple-50 to-indigo-50 dark:from-purple-950/40 dark:to-indigo-950/40 border border-purple-200 dark:border-purple-800/80 rounded-2xl hover:border-purple-400 dark:hover:border-purple-600 transition-all shadow-xs group cursor-pointer active:scale-95"
-              title="Okul Yılını veya Hedef Notu Değiştir (Tıklayın)"
-            >
-              <div className="flex items-center gap-1.5 text-xs font-bold text-purple-950 dark:text-purple-200">
-                <GraduationCap className="w-4 h-4 text-purple-600 dark:text-purple-400" />
-                <span>Year {session.schoolYear || 10}</span>
-              </div>
-              <span className="text-slate-300 dark:text-slate-700">•</span>
-              <div className="flex items-center gap-1.5 text-xs font-black text-indigo-700 dark:text-indigo-300">
-                <Award className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
-                <span>Grade {session.targetGrade}</span>
-              </div>
-              <Pencil className="w-3 h-3 text-slate-400 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors ml-1" />
-            </button>
-          </div>
         </div>
 
         {/* Search Bar & Quick Assessment CTA */}

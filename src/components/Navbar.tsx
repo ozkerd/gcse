@@ -102,7 +102,7 @@ export const Navbar = () => {
             <button
               onClick={() => setIsTargetModalOpen(true)}
               className="hidden sm:flex items-center gap-1.5 bg-gradient-to-r from-purple-50 to-indigo-50 dark:from-purple-950/40 dark:to-indigo-950/40 border border-purple-200 dark:border-purple-800/80 px-3 py-1.5 rounded-full hover:border-purple-400 dark:hover:border-purple-600 hover:shadow-xs transition-all group active:scale-95 cursor-pointer"
-              title="Hedef Notu veya Okul Yılını Değiştir (Tıklayın)"
+              title="Change Target Grade or School Year"
             >
               <Award className="w-4 h-4 text-purple-600 dark:text-purple-400 group-hover:scale-110 transition-transform" />
               <div className="text-xs">

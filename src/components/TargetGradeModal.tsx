@@ -76,10 +76,10 @@ export const TargetGradeModal: React.FC<TargetGradeModalProps> = ({
           </div>
           <div>
             <h2 className="text-xl font-bold text-slate-900 dark:text-slate-100">
-              Hedef Not & Okul Yılı
+              Target Grade & School Year
             </h2>
             <p className="text-xs text-slate-500 dark:text-slate-400">
-              GCSE hedefinizi ve sınıfınızı istediğiniz zaman güncelleyebilirsiniz.
+              Customize your GCSE target grade and academic school year anytime.
             </p>
           </div>
         </div>
@@ -88,7 +88,7 @@ export const TargetGradeModal: React.FC<TargetGradeModalProps> = ({
         <div className="mb-6">
           <label className="flex items-center gap-1.5 text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-2.5">
             <GraduationCap className="w-4 h-4 text-purple-600 dark:text-purple-400" />
-            Okul Yılı (School Year)
+            School Year
           </label>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
             {years.map((y) => {
@@ -116,7 +116,7 @@ export const TargetGradeModal: React.FC<TargetGradeModalProps> = ({
         <div className="mb-6">
           <label className="flex items-center gap-1.5 text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-2.5">
             <Sparkles className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
-            Hedef Not (Target Grade)
+            Target GCSE Grade
           </label>
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
             {grades.map((g) => {
@@ -156,7 +156,7 @@ export const TargetGradeModal: React.FC<TargetGradeModalProps> = ({
             onClick={onClose}
             className="w-1/3 py-3 rounded-xl border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 font-semibold text-xs hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
           >
-            İptal
+            Cancel
           </button>
           <button
             type="button"
@@ -166,10 +166,10 @@ export const TargetGradeModal: React.FC<TargetGradeModalProps> = ({
             {isSaved ? (
               <>
                 <Check className="w-4 h-4" />
-                Kaydedildi!
+                Saved!
               </>
             ) : (
-              'Hedefi Kaydet & Güncelle'
+              'Save Changes'
             )}
           </button>
         </div>
