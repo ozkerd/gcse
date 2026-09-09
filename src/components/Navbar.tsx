@@ -3,10 +3,9 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Brain, LayoutDashboard, Target, Calendar, BookOpen, Sparkles, Award, Users, FileText, UserCheck, LogIn, Zap, Pencil } from 'lucide-react';
+import { Brain, LayoutDashboard, Target, Calendar, BookOpen, Sparkles, Award, Users, FileText, UserCheck, LogIn, Pencil } from 'lucide-react';
 import { UserStore, UserSession } from '@/lib/user-store';
 import { AuthModal } from '@/components/AuthModal';
-import { QuickAssessmentModal } from '@/components/QuickAssessmentModal';
 import { TargetGradeModal } from '@/components/TargetGradeModal';
 import { ThemeToggle } from '@/components/ThemeToggle';
 
@@ -19,7 +18,6 @@ export const Navbar = () => {
     targetGrade: 9,
   });
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
-  const [isQuickAssessmentOpen, setIsQuickAssessmentOpen] = useState(false);
   const [isTargetModalOpen, setIsTargetModalOpen] = useState(false);
 
   useEffect(() => {
@@ -89,15 +87,6 @@ export const Navbar = () => {
             {/* Dark / Light Mode Toggle */}
             <ThemeToggle showLabel={false} className="h-8 shrink-0" />
 
-            {/* Quick 5-Question Snapshot Launcher */}
-            <button
-              onClick={() => setIsQuickAssessmentOpen(true)}
-              className="flex items-center gap-1.5 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white px-3 py-1.5 rounded-xl text-xs font-bold transition-all shadow-md active:scale-95 shrink-0"
-            >
-              <Zap className="w-3.5 h-3.5 fill-white" />
-              <span>Quick 5 Test</span>
-            </button>
-
             {/* Target Grade Interactive Badge */}
             <button
               onClick={() => setIsTargetModalOpen(true)}
@@ -139,12 +128,6 @@ export const Navbar = () => {
         isOpen={isAuthModalOpen}
         onClose={() => setIsAuthModalOpen(false)}
         currentSession={session}
-      />
-
-      {/* Quick 5-Question Assessment Modal */}
-      <QuickAssessmentModal
-        isOpen={isQuickAssessmentOpen}
-        onClose={() => setIsQuickAssessmentOpen(false)}
       />
 
       {/* Target Grade & School Year Setting Modal */}
