@@ -2,13 +2,14 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { Award, Sparkles, TrendingUp, Calendar, AlertCircle, ArrowRight, CheckCircle, Zap, GraduationCap, BarChart2, BarChart3, Lock, Clock, Bell, Play } from 'lucide-react';
+import { Award, Sparkles, TrendingUp, Calendar, AlertCircle, ArrowRight, CheckCircle, Zap, GraduationCap, BarChart2, Clock, Bell, Play, Pencil } from 'lucide-react';
 import { AdaptiveEngine } from '@/lib/adaptive/engine';
 import { UserStore, UserSession, DailyStats, ScheduledReview } from '@/lib/user-store';
 import { SearchBar } from '@/components/SearchBar';
 import { QuickAssessmentModal } from '@/components/QuickAssessmentModal';
 import { TopicBreakdownModal } from '@/components/TopicBreakdownModal';
 import { DailyGoalModal } from '@/components/DailyGoalModal';
+import { TargetGradeModal } from '@/components/TargetGradeModal';
 
 export default function Dashboard() {
   const [session, setSession] = useState<UserSession>({
@@ -32,6 +33,7 @@ export default function Dashboard() {
   const [isQuickAssessmentOpen, setIsQuickAssessmentOpen] = useState(false);
   const [isBreakdownOpen, setIsBreakdownOpen] = useState(false);
   const [isDailyGoalOpen, setIsDailyGoalOpen] = useState(false);
+  const [isTargetModalOpen, setIsTargetModalOpen] = useState(false);
   const [allTimeAttempted, setAllTimeAttempted] = useState(0);
   const [daysUntilExam, setDaysUntilExam] = useState(244);
   const [reviewsDueToday, setReviewsDueToday] = useState<ScheduledReview[]>([]);
@@ -115,53 +117,24 @@ export default function Dashboard() {
             </p>
           </div>
 
-          {/* School Year & Target Grade Selectors */}
-          <div className="flex flex-wrap items-center gap-3 shrink-0">
-            <div className="flex items-center gap-3 bg-purple-50 dark:bg-purple-950/50 border border-purple-100 dark:border-purple-900/60 p-2.5 rounded-2xl">
-              <GraduationCap className="w-5 h-5 text-purple-600 dark:text-purple-400 shrink-0" />
-              <div>
-                <label className="block text-[10px] font-bold text-purple-900 dark:text-purple-300 uppercase tracking-wider">School Year</label>
-                <select
-                  value={session.schoolYear || 10}
-                  onChange={(e) => {
-                    const yr = Number(e.target.value);
-                    UserStore.setSchoolYear(yr);
-                  }}
-                  className="bg-white dark:bg-slate-800 border border-purple-200 dark:border-purple-800 text-purple-950 dark:text-purple-200 font-bold text-xs rounded-lg px-2 py-1 focus:ring-2 focus:ring-purple-500"
-                >
-                  <option value={8}>Year 8 (Foundation / Gr 4)</option>
-                  <option value={9}>Year 9 (Grade 5)</option>
-                  <option value={10}>Year 10 (Grade 6)</option>
-                  <option value={11}>Year 11 (Grade 8)</option>
-                </select>
-              </div>
-            </div>
-
-            <div className="flex items-center gap-3 bg-indigo-50/80 dark:bg-indigo-950/50 border border-indigo-100 dark:border-indigo-900/60 p-2.5 rounded-2xl">
-              <Award className="w-5 h-5 text-indigo-600 dark:text-indigo-400 shrink-0" />
-              <div>
-                <label className="block text-[10px] font-bold text-indigo-900 dark:text-indigo-300 uppercase tracking-wider">Target GCSE Grade</label>
-                <select
-                  value={session.targetGrade}
-                  onChange={(e) => handleTargetGradeChange(Number(e.target.value))}
-                  className="bg-white dark:bg-slate-800 border border-indigo-200 dark:border-indigo-800 text-indigo-950 dark:text-indigo-200 font-bold text-xs rounded-lg px-2 py-1 focus:ring-2 focus:ring-indigo-500"
-                >
-                  {[4, 5, 6, 7, 8, 9].map(g => (
-                    <option key={g} value={g}>Grade {g} (Target)</option>
-                  ))}
-                </select>
-              </div>
-            </div>
-
-            <Link
-              href="/stats"
-              className="flex items-center gap-1.5 px-3 py-2.5 bg-slate-100 dark:bg-slate-800 hover:bg-indigo-50 dark:hover:bg-indigo-950/40 text-slate-600 dark:text-slate-300 hover:text-indigo-600 dark:hover:text-indigo-400 border border-slate-200 dark:border-slate-700 rounded-2xl text-xs font-semibold transition-all shadow-xs"
-              title="Platform Canlı Ziyaretçi & User-Agent İstatistikleri (/stats)"
+          {/* Compact Target Grade & School Year Badge */}
+          <div className="flex items-center gap-2 shrink-0">
+            <button
+              onClick={() => setIsTargetModalOpen(true)}
+              className="flex items-center gap-2.5 px-4 py-2.5 bg-gradient-to-r from-purple-50 to-indigo-50 dark:from-purple-950/40 dark:to-indigo-950/40 border border-purple-200 dark:border-purple-800/80 rounded-2xl hover:border-purple-400 dark:hover:border-purple-600 transition-all shadow-xs group cursor-pointer active:scale-95"
+              title="Okul Yılını veya Hedef Notu Değiştir (Tıklayın)"
             >
-              <BarChart3 className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
-              <span>Platform Stats</span>
-              <Lock className="w-3 h-3 text-slate-400" />
-            </Link>
+              <div className="flex items-center gap-1.5 text-xs font-bold text-purple-950 dark:text-purple-200">
+                <GraduationCap className="w-4 h-4 text-purple-600 dark:text-purple-400" />
+                <span>Year {session.schoolYear || 10}</span>
+              </div>
+              <span className="text-slate-300 dark:text-slate-700">•</span>
+              <div className="flex items-center gap-1.5 text-xs font-black text-indigo-700 dark:text-indigo-300">
+                <Award className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
+                <span>Grade {session.targetGrade}</span>
+              </div>
+              <Pencil className="w-3 h-3 text-slate-400 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors ml-1" />
+            </button>
           </div>
         </div>
 
@@ -446,6 +419,13 @@ export default function Dashboard() {
         onGoalSaved={(newG) => {
           setSession((prev) => ({ ...prev, dailyStudyGoalMinutes: newG }));
         }}
+      />
+
+      {/* Target Grade & School Year Setting Modal */}
+      <TargetGradeModal
+        isOpen={isTargetModalOpen}
+        onClose={() => setIsTargetModalOpen(false)}
+        currentSession={session}
       />
 
     </div>
