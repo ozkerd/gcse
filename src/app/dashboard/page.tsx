@@ -118,18 +118,9 @@ export default function Dashboard() {
           </div>
         </div>
 
-        {/* Search Bar & Quick Assessment CTA */}
-        <div className="pt-2 border-t border-slate-100 dark:border-slate-800 flex flex-col md:flex-row items-center gap-3">
-          <div className="w-full">
-            <SearchBar placeholder="Search any topic (e.g. Macbeth, Quadratic, Cold War, Mitosis, Energy)..." />
-          </div>
-          <button
-            onClick={() => setIsQuickAssessmentOpen(true)}
-            className="w-full md:w-auto shrink-0 px-5 py-3.5 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white font-extrabold text-sm rounded-2xl shadow-md flex items-center justify-center gap-2 transition-all"
-          >
-            <Zap className="w-4 h-4 fill-white" />
-            <span>5-Question Test</span>
-          </button>
+        {/* Search Bar */}
+        <div className="pt-2 border-t border-slate-100 dark:border-slate-800">
+          <SearchBar placeholder="Search any topic (e.g. Macbeth, Quadratic, Cold War, Mitosis, Energy)..." />
         </div>
       </div>
 

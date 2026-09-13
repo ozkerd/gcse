@@ -1,15 +1,10 @@
-'use client';
-
-import React, { useState } from 'react';
+import React from 'react';
 import Link from 'next/link';
-import { Target, Sparkles, Calendar, Award, ArrowRight, HelpCircle, Zap } from 'lucide-react';
+import { Target, Sparkles, Calendar, Award, ArrowRight, HelpCircle } from 'lucide-react';
 import { GCSE_SUBJECTS } from '@/lib/curriculum/gcse-data';
 import { SearchBar } from '@/components/SearchBar';
-import { QuickAssessmentModal } from '@/components/QuickAssessmentModal';
 
 export default function Home() {
-  const [isQuickAssessmentOpen, setIsQuickAssessmentOpen] = useState(false);
-
   return (
     <div className="space-y-12">
       
@@ -29,7 +24,7 @@ export default function Home() {
           </h1>
 
           <p className="text-slate-300 text-base sm:text-lg leading-relaxed">
-            Search any GCSE topic below, take a quick 5-question snapshot test, or run a full diagnostic assessment calibrated to your exact working grade level.
+            Search any GCSE topic below, or run a full diagnostic assessment calibrated to your exact working grade level.
           </p>
 
           {/* Google-like Instant Search Bar */}
@@ -38,14 +33,6 @@ export default function Home() {
           </div>
 
           <div className="flex flex-wrap gap-3 pt-4">
-            <button
-              onClick={() => setIsQuickAssessmentOpen(true)}
-              className="inline-flex items-center gap-2 px-6 py-3.5 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white font-extrabold shadow-lg shadow-amber-500/30 hover:scale-105 transition-all text-sm"
-            >
-              <Zap className="w-5 h-5 fill-yellow-300 text-yellow-300" />
-              <span>Take Quick 5-Question Test</span>
-            </button>
-
             <Link
               href="/diagnostic"
               className="inline-flex items-center gap-2 px-6 py-3.5 rounded-xl bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white font-bold shadow-lg shadow-indigo-500/30 hover:scale-105 transition-all text-sm"
@@ -143,13 +130,6 @@ export default function Home() {
           ))}
         </div>
       </section>
-
-      {/* Quick Assessment Modal */}
-      <QuickAssessmentModal
-        isOpen={isQuickAssessmentOpen}
-        onClose={() => setIsQuickAssessmentOpen(false)}
-      />
-
     </div>
   );
 }
