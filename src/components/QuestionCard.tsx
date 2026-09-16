@@ -5,6 +5,7 @@ import { SeedQuestion } from '@/lib/curriculum/gcse-data';
 import { KaTeXRenderer } from '@/components/KaTeXRenderer';
 import { validateAnswer } from '@/lib/ai/generator';
 import { CheckCircle2, XCircle, HelpCircle, FileText, Send, Award } from 'lucide-react';
+import { TopicRevisionResources } from '@/components/TopicRevisionResources';
 
 interface QuestionCardProps {
   question: SeedQuestion;
@@ -384,6 +385,12 @@ export function QuestionCard({
               </div>
             </div>
           )}
+
+          {/* Topic Revision & Video Walkthroughs (PMT, Corbettmaths, Maths Genie, Save My Exams) */}
+          <TopicRevisionResources
+            topicId={question.topicId}
+            defaultExpanded={!evalResult?.isCorrect}
+          />
 
           {/* Next Question Action */}
           {onNext && (

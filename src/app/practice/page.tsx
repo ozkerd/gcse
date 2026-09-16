@@ -243,6 +243,7 @@ function PracticeContent() {
           onClose={() => setIsModalOpen(false)}
           explanation={deepAnalysisData}
           topicName={currentTopic?.topicName || 'GCSE Topic Deep Analysis'}
+          topicId={currentTopic?.id}
         />
       )}
 

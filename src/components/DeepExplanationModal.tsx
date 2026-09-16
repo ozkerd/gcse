@@ -4,15 +4,17 @@ import React, { useState } from 'react';
 import { DeepExplanationResult } from '@/lib/ai/generator';
 import { KaTeXRenderer } from './KaTeXRenderer';
 import { Lightbulb, CheckCircle2, AlertTriangle, BookOpen, X, Sparkles, HelpCircle } from 'lucide-react';
+import { TopicRevisionResources } from './TopicRevisionResources';
 
 interface Props {
   isOpen: boolean;
   onClose: () => void;
   explanation: DeepExplanationResult;
   topicName: string;
+  topicId?: string;
 }
 
-export const DeepExplanationModal: React.FC<Props> = ({ isOpen, onClose, explanation, topicName }) => {
+export const DeepExplanationModal: React.FC<Props> = ({ isOpen, onClose, explanation, topicName, topicId }) => {
   const [selectedPracticeOption, setSelectedPracticeOption] = useState<string | null>(null);
   const [showPracticeResult, setShowPracticeResult] = useState(false);
 
@@ -162,6 +164,13 @@ export const DeepExplanationModal: React.FC<Props> = ({ isOpen, onClose, explana
               </div>
             )}
           </div>
+
+          {/* External Topic Revision & Video Tutorials (PMT, Corbettmaths, Maths Genie, Save My Exams) */}
+          <TopicRevisionResources
+            topicId={topicId || 'm-alg-1'}
+            topicName={topicName}
+            defaultExpanded={false}
+          />
 
         </div>
 
