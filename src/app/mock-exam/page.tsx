@@ -7,7 +7,6 @@ import { UserStore } from '@/lib/user-store';
 import { AdaptiveEngine } from '@/lib/adaptive/engine';
 import { validateAnswer } from '@/lib/ai/generator';
 import { QuestionCard } from '@/components/QuestionCard';
-import { TopicRevisionResources } from '@/components/TopicRevisionResources';
 import Link from 'next/link';
 
 export default function MockExamPage() {
@@ -299,18 +298,10 @@ export default function MockExamPage() {
               const isWeak = tData.correct < tData.total;
               return (
                 <div key={tId} className="flex justify-between items-center py-2 border-b border-slate-100 last:border-b-0">
-                  <div className="flex flex-col">
-                    <span className="text-slate-800 font-bold truncate max-w-[260px]">
-                      {tData.topicName}
-                    </span>
-                    {isWeak && (
-                      <span className="text-[10px] text-indigo-600 font-semibold flex items-center gap-1 mt-0.5">
-                        <BookOpen className="w-3 h-3" />
-                        PMT • Save My Exams • Video Lessons
-                      </span>
-                    )}
-                  </div>
-                  <div className="flex items-center gap-2">
+                  <span className="text-slate-800 font-semibold truncate max-w-[280px]">
+                    {tData.topicName}
+                  </span>
+                  <div className="flex items-center gap-2.5">
                     <span className={`font-mono text-xs font-bold ${topicPct >= 70 ? 'text-emerald-600' : topicPct >= 40 ? 'text-amber-600' : 'text-rose-600'}`}>
                       {tData.correct} / {tData.total} ({topicPct}%)
                     </span>
@@ -319,7 +310,7 @@ export default function MockExamPage() {
                         href={`/practice?topicId=${tId}`}
                         className="px-2.5 py-1 rounded-lg bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-bold text-[11px] transition-colors"
                       >
-                        Practice
+                        Practice Topic
                       </Link>
                     )}
                   </div>
@@ -327,18 +318,6 @@ export default function MockExamPage() {
               );
             })}
           </div>
-
-          {/* Weak Topic Revision Resources Card */}
-          {Object.entries(topicBreakdown).some(([_, d]) => d.correct < d.total) && (
-            <div className="max-w-lg mx-auto text-left">
-              <TopicRevisionResources
-                topicId={Object.entries(topicBreakdown).find(([_, d]) => d.correct < d.total)![0]}
-                topicName={Object.entries(topicBreakdown).find(([_, d]) => d.correct < d.total)![1].topicName}
-                subjectId={selectedSubject}
-                defaultExpanded={true}
-              />
-            </div>
-          )}
 
           <div className="pt-2 flex flex-wrap justify-center gap-3">
             <button

@@ -4,8 +4,8 @@ import React, { useState } from 'react';
 import { SeedQuestion } from '@/lib/curriculum/gcse-data';
 import { KaTeXRenderer } from '@/components/KaTeXRenderer';
 import { validateAnswer } from '@/lib/ai/generator';
-import { CheckCircle2, XCircle, HelpCircle, FileText, Send, Award } from 'lucide-react';
-import { TopicRevisionResources } from '@/components/TopicRevisionResources';
+import { CheckCircle2, XCircle, HelpCircle, FileText, Send, Award, Play } from 'lucide-react';
+import { getTopicVideoUrl } from '@/lib/curriculum/topic-resources';
 
 interface QuestionCardProps {
   question: SeedQuestion;
@@ -75,6 +75,7 @@ export function QuestionCard({
 }: QuestionCardProps) {
   const [textInput, setTextInput] = useState<string>(selectedAnswer || '');
   const inputRef = React.useRef<HTMLInputElement | HTMLTextAreaElement | null>(null);
+  const videoInfo = getTopicVideoUrl(question.topicId);
 
   React.useEffect(() => {
     setTextInput(selectedAnswer || '');
@@ -319,16 +320,77 @@ export function QuestionCard({
               </div>
             </div>
 
-            {onDeepAnalysis && (
-              <button
-                onClick={onDeepAnalysis}
-                className="px-4 py-2 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-bold shadow-sm shrink-0 flex items-center gap-1.5 transition-all"
-              >
-                <HelpCircle className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
-                <span>Deep Solution Analysis</span>
-              </button>
-            )}
+            <div className="flex flex-wrap items-center gap-2 shrink-0">
+              {videoInfo && (
+                <a
+                  href={videoInfo.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="px-3.5 py-2 bg-rose-600 hover:bg-rose-700 text-white rounded-xl text-xs font-bold shadow-sm flex items-center gap-1.5 transition-all"
+                  title={`Watch ${videoInfo.channel} video tutorial on YouTube`}
+                >
+                  <Play className="w-3.5 h-3.5 fill-white" />
+                  <span>Watch Video Lesson</span>
+                </a>
+              )}
+              {onDeepAnalysis && (
+                <button
+                  onClick={onDeepAnalysis}
+                  className="px-3.5 py-2 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-bold shadow-sm shrink-0 flex items-center gap-1.5 transition-all"
+                >
+                  <HelpCircle className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400" />
+                  <span>Deep Analysis</span>
+                </button>
+              )}
+            </div>
           </div>
+
+          {/* Our Own In-Database Step-by-Step Worked Solution */}
+          {!evalResult?.isCorrect && (
+            <div className="p-5 rounded-2xl bg-slate-50 dark:bg-slate-800/90 border border-slate-200 dark:border-slate-700 space-y-3 text-xs">
+              <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-200 dark:border-slate-700 pb-2.5">
+                <span className="font-extrabold text-slate-900 dark:text-slate-100 uppercase tracking-wider flex items-center gap-2">
+                  <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                  Official Model Answer:
+                </span>
+                <span className="font-mono font-bold text-sm text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/60 px-3 py-1 rounded-xl border border-emerald-200 dark:border-emerald-800">
+                  <KaTeXRenderer content={question.correctAnswer} />
+                </span>
+              </div>
+
+              {/* Step-by-step solution from DB */}
+              {question.explanation?.stepByStep && question.explanation.stepByStep.length > 0 ? (
+                <div className="space-y-2">
+                  <span className="font-bold text-slate-800 dark:text-slate-200 block">
+                    Worked Solution & Method:
+                  </span>
+                  <div className="space-y-1.5">
+                    {question.explanation.stepByStep.map((step, idx) => (
+                      <div key={idx} className="flex items-start gap-2.5 bg-white dark:bg-slate-800 p-2.5 rounded-xl border border-slate-200/80 dark:border-slate-700">
+                        <span className="w-5 h-5 rounded-full bg-indigo-600 text-white text-[11px] font-bold flex items-center justify-center shrink-0 mt-0.5">
+                          {idx + 1}
+                        </span>
+                        <div className="text-slate-800 dark:text-slate-200 leading-relaxed">
+                          <KaTeXRenderer content={step} />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ) : question.explanation?.overview ? (
+                <div className="p-3 bg-white dark:bg-slate-800 rounded-xl border border-slate-200/80 dark:border-slate-700 text-slate-800 dark:text-slate-200 leading-relaxed">
+                  <KaTeXRenderer content={question.explanation.overview} />
+                </div>
+              ) : null}
+
+              {/* Examiner Tip from DB if available */}
+              {question.explanation?.examTip && (
+                <div className="p-3 bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 rounded-xl text-amber-900 dark:text-amber-200 font-medium">
+                  <strong>Examiner Guidance:</strong> <KaTeXRenderer content={question.explanation.examTip} />
+                </div>
+              )}
+            </div>
+          )}
 
           {/* Official GCSE Mark Scheme Breakdown */}
           {evalResult?.marksBreakdown && evalResult.marksBreakdown.length > 0 && (
@@ -385,12 +447,6 @@ export function QuestionCard({
               </div>
             </div>
           )}
-
-          {/* Topic Revision & Video Walkthroughs (PMT, Corbettmaths, Maths Genie, Save My Exams) */}
-          <TopicRevisionResources
-            topicId={question.topicId}
-            defaultExpanded={!evalResult?.isCorrect}
-          />
 
           {/* Next Question Action */}
           {onNext && (

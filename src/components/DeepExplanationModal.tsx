@@ -3,8 +3,8 @@
 import React, { useState } from 'react';
 import { DeepExplanationResult } from '@/lib/ai/generator';
 import { KaTeXRenderer } from './KaTeXRenderer';
-import { Lightbulb, CheckCircle2, AlertTriangle, BookOpen, X, Sparkles, HelpCircle } from 'lucide-react';
-import { TopicRevisionResources } from './TopicRevisionResources';
+import { Lightbulb, CheckCircle2, AlertTriangle, BookOpen, X, Sparkles, HelpCircle, Play } from 'lucide-react';
+import { getTopicVideoUrl } from '@/lib/curriculum/topic-resources';
 
 interface Props {
   isOpen: boolean;
@@ -17,6 +17,7 @@ interface Props {
 export const DeepExplanationModal: React.FC<Props> = ({ isOpen, onClose, explanation, topicName, topicId }) => {
   const [selectedPracticeOption, setSelectedPracticeOption] = useState<string | null>(null);
   const [showPracticeResult, setShowPracticeResult] = useState(false);
+  const videoInfo = topicId ? getTopicVideoUrl(topicId) : null;
 
   if (!isOpen) return null;
 
@@ -165,17 +166,23 @@ export const DeepExplanationModal: React.FC<Props> = ({ isOpen, onClose, explana
             )}
           </div>
 
-          {/* External Topic Revision & Video Tutorials (PMT, Corbettmaths, Maths Genie, Save My Exams) */}
-          <TopicRevisionResources
-            topicId={topicId || 'm-alg-1'}
-            topicName={topicName}
-            defaultExpanded={false}
-          />
-
         </div>
 
         {/* Footer */}
-        <div className="bg-slate-50 border-t border-slate-200 p-4 rounded-b-2xl flex justify-end">
+        <div className="bg-slate-50 dark:bg-slate-800/80 border-t border-slate-200 dark:border-slate-700 p-4 rounded-b-2xl flex items-center justify-between gap-3">
+          {videoInfo ? (
+            <a
+              href={videoInfo.url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white rounded-xl text-xs font-bold shadow-sm flex items-center gap-1.5 transition-all"
+            >
+              <Play className="w-3.5 h-3.5 fill-white" />
+              <span>Watch Video Lesson</span>
+            </a>
+          ) : (
+            <div />
+          )}
           <button
             onClick={onClose}
             className="px-6 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-xl text-sm transition-colors shadow-md"
