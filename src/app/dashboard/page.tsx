@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { Award, Sparkles, TrendingUp, Calendar, AlertCircle, ArrowRight, CheckCircle, Zap, GraduationCap, BarChart2, Clock, Bell, Play, Pencil } from 'lucide-react';
+import { Award, Sparkles, TrendingUp, Calendar, AlertCircle, ArrowRight, CheckCircle, Zap, GraduationCap, BarChart2, Clock, Bell, Play, Pencil, Headphones, Layers, Sliders } from 'lucide-react';
 import { AdaptiveEngine } from '@/lib/adaptive/engine';
 import { UserStore, UserSession, DailyStats, ScheduledReview } from '@/lib/user-store';
 import { SearchBar } from '@/components/SearchBar';
@@ -10,6 +10,7 @@ import { QuickAssessmentModal } from '@/components/QuickAssessmentModal';
 import { TopicBreakdownModal } from '@/components/TopicBreakdownModal';
 import { DailyGoalModal } from '@/components/DailyGoalModal';
 import { TargetGradeModal } from '@/components/TargetGradeModal';
+import { LevelCheckInModal } from '@/components/LevelCheckInModal';
 
 export default function Dashboard() {
   const [session, setSession] = useState<UserSession>({
@@ -34,6 +35,8 @@ export default function Dashboard() {
   const [isBreakdownOpen, setIsBreakdownOpen] = useState(false);
   const [isDailyGoalOpen, setIsDailyGoalOpen] = useState(false);
   const [isTargetModalOpen, setIsTargetModalOpen] = useState(false);
+  const [isLevelModalOpen, setIsLevelModalOpen] = useState(false);
+  const [coveredTopicsCount, setCoveredTopicsCount] = useState(0);
   const [allTimeAttempted, setAllTimeAttempted] = useState(0);
   const [daysUntilExam, setDaysUntilExam] = useState(244);
   const [reviewsDueToday, setReviewsDueToday] = useState<ScheduledReview[]>([]);
@@ -43,6 +46,11 @@ export default function Dashboard() {
     setDailyStats(UserStore.getDailyStats());
     setDaysUntilExam(UserStore.getDaysUntilExam());
     setReviewsDueToday(UserStore.getReviewsDueToday());
+
+    const updateCoverageCount = () => {
+      const cov = Object.values(UserStore.getTopicCoverageMap());
+      setCoveredTopicsCount(cov.filter(c => c.status !== 'not_covered').length);
+    };
 
     const updateMasteries = () => {
       const masteries = Object.values(UserStore.getTopicMasteries());
@@ -55,6 +63,7 @@ export default function Dashboard() {
     };
 
     updateMasteries();
+    updateCoverageCount();
 
     const handleUserUpdate = () => {
       setSession(UserStore.getSession());
@@ -63,6 +72,7 @@ export default function Dashboard() {
     const handleStatsUpdate = () => {
       setDailyStats(UserStore.getDailyStats());
       updateMasteries();
+      updateCoverageCount();
     };
     const handleReviewsUpdate = () => {
       setReviewsDueToday(UserStore.getReviewsDueToday());
@@ -71,12 +81,14 @@ export default function Dashboard() {
     window.addEventListener('gcse_user_updated', handleUserUpdate);
     window.addEventListener('gcse_stats_updated', handleStatsUpdate);
     window.addEventListener('gcse_masteries_updated', handleStatsUpdate);
+    window.addEventListener('gcse_coverage_updated', handleStatsUpdate);
     window.addEventListener('gcse_reviews_updated', handleReviewsUpdate);
 
     return () => {
       window.removeEventListener('gcse_user_updated', handleUserUpdate);
       window.removeEventListener('gcse_stats_updated', handleStatsUpdate);
       window.removeEventListener('gcse_masteries_updated', handleStatsUpdate);
+      window.removeEventListener('gcse_coverage_updated', handleStatsUpdate);
       window.removeEventListener('gcse_reviews_updated', handleReviewsUpdate);
     };
   }, []);
@@ -275,6 +287,79 @@ export default function Dashboard() {
 
       </div>
 
+      {/* Student Interactive Study Hub: Flashcards, Audio-Visual Pods & Level Check-In */}
+      <div className="grid md:grid-cols-3 gap-6">
+        {/* Card 1: 3D Flashcards */}
+        <Link
+          href="/flashcards"
+          className="group p-6 rounded-3xl bg-gradient-to-br from-indigo-600 to-blue-700 text-white shadow-lg hover:shadow-xl hover:scale-[1.01] transition-all flex flex-col justify-between"
+        >
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <span className="px-2.5 py-0.5 rounded-full bg-white/20 text-[10px] font-black uppercase tracking-wider">
+                All 103 Topics
+              </span>
+              <Layers className="w-5 h-5 text-indigo-200 group-hover:rotate-6 transition-transform" />
+            </div>
+            <h3 className="text-lg font-black">3D Formula & Rule Flashcards</h3>
+            <p className="text-xs text-indigo-100 leading-relaxed">
+              Flip through golden formulae, examiner hacks, and micro-problems with spaced repetition tracking.
+            </p>
+          </div>
+          <div className="mt-4 pt-3 border-t border-white/15 flex items-center justify-between text-xs font-extrabold">
+            <span>Open Flashcard Deck</span>
+            <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+          </div>
+        </Link>
+
+        {/* Card 2: NotebookLM-Style Audio & Visual Study Pods */}
+        <Link
+          href="/flashcards?mode=pods"
+          className="group p-6 rounded-3xl bg-gradient-to-br from-purple-700 via-pink-600 to-rose-600 text-white shadow-lg hover:shadow-xl hover:scale-[1.01] transition-all flex flex-col justify-between"
+        >
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <span className="px-2.5 py-0.5 rounded-full bg-white/20 text-[10px] font-black uppercase tracking-wider">
+                Audio + Visual Slides
+              </span>
+              <Headphones className="w-5 h-5 text-pink-200 group-hover:scale-110 transition-transform" />
+            </div>
+            <h3 className="text-lg font-black">2-Min Audio-Visual Exam Pods</h3>
+            <p className="text-xs text-pink-100 leading-relaxed">
+              Listen to Alex & Maya explain the crucial 3 rules & formulas that solve 90% of GCSE exam problems.
+            </p>
+          </div>
+          <div className="mt-4 pt-3 border-t border-white/15 flex items-center justify-between text-xs font-extrabold">
+            <span>Watch & Listen Now</span>
+            <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+          </div>
+        </Link>
+
+        {/* Card 3: Student Level & Covered School Topics Check-In */}
+        <button
+          type="button"
+          onClick={() => setIsLevelModalOpen(true)}
+          className="group p-6 rounded-3xl bg-gradient-to-br from-emerald-600 to-teal-700 text-white shadow-lg hover:shadow-xl hover:scale-[1.01] transition-all flex flex-col justify-between text-left"
+        >
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <span className="px-2.5 py-0.5 rounded-full bg-white/20 text-[10px] font-black uppercase tracking-wider">
+                {coveredTopicsCount > 0 ? `${coveredTopicsCount} Topics Tracked` : 'Personalise Level'}
+              </span>
+              <Sliders className="w-5 h-5 text-emerald-200 group-hover:rotate-12 transition-transform" />
+            </div>
+            <h3 className="text-lg font-black">My Level & Covered Topics</h3>
+            <p className="text-xs text-emerald-100 leading-relaxed">
+              Tell us which topics you have covered in school & your confidence level so we calibrate custom questions for you.
+            </p>
+          </div>
+          <div className="mt-4 pt-3 border-t border-white/15 flex items-center justify-between text-xs font-extrabold w-full">
+            <span>Calibrate My Level & Topics</span>
+            <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+          </div>
+        </button>
+      </div>
+
       {/* Exam Countdown & Revision Hub Banner */}
       <div className="p-5 rounded-2xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200/80 dark:border-slate-700/80 flex flex-col sm:flex-row items-center justify-between gap-4 transition-colors">
         <div className="flex items-center gap-3.5">
@@ -324,7 +409,7 @@ export default function Dashboard() {
               href="/practice?topicId=m-alg-1"
               className="inline-flex items-center gap-2 bg-white text-indigo-900 hover:bg-slate-100 font-bold px-5 py-3 rounded-xl text-sm transition-all shadow-md"
             >
-              <span>Start Adaptive Practice</span>
+              <span>Start Custom & Adaptive Practice</span>
               <ArrowRight className="w-4 h-4" />
             </Link>
 
@@ -397,6 +482,12 @@ export default function Dashboard() {
         isOpen={isTargetModalOpen}
         onClose={() => setIsTargetModalOpen(false)}
         currentSession={session}
+      />
+
+      {/* Student Level & Covered Topics Calibration Modal */}
+      <LevelCheckInModal
+        isOpen={isLevelModalOpen}
+        onClose={() => setIsLevelModalOpen(false)}
       />
 
     </div>

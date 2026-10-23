@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Brain, LayoutDashboard, Target, Calendar, BookOpen, Sparkles, Award, Users, FileText, UserCheck, LogIn, Pencil } from 'lucide-react';
+import { Brain, LayoutDashboard, Target, Calendar, BookOpen, Sparkles, Award, Users, FileText, UserCheck, LogIn, Pencil, Headphones } from 'lucide-react';
 import { UserStore, UserSession } from '@/lib/user-store';
 import { AuthModal } from '@/components/AuthModal';
 import { TargetGradeModal } from '@/components/TargetGradeModal';
@@ -33,8 +33,9 @@ export const Navbar = () => {
 
   const navItems = [
     { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
+    { href: '/flashcards', label: 'Flashcards & Pods', icon: Headphones },
+    { href: '/practice', label: 'Custom Practice', icon: Sparkles },
     { href: '/diagnostic', label: 'Diagnostic Test', icon: Target },
-    { href: '/practice', label: 'AI Question Engine', icon: Sparkles },
     { href: '/mock-exam', label: 'Mock Exams', icon: FileText },
     { href: '/topics', label: 'Topic Matrix', icon: BookOpen },
     { href: '/calendar', label: 'Study Schedule', icon: Calendar },

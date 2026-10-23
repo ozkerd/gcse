@@ -4,6 +4,22 @@ import { SeedQuestion, INITIAL_SEED_QUESTIONS } from './curriculum/gcse-data';
 
 export type UserRole = 'guest' | 'student' | 'parent';
 
+export type TopicCoverageStatus = 'confident' | 'needs_practice' | 'not_covered';
+
+export interface StudentTopicCoverage {
+  topicId: string;
+  status: TopicCoverageStatus;
+  selfAssessedGrade: number; // 1 to 9
+  updatedAt: string;
+}
+
+export interface FlashcardTopicProgress {
+  topicId: string;
+  masteredCardIds: string[];
+  learningCardIds: string[];
+  lastReviewedAt: string;
+}
+
 export interface UserSession {
   role: UserRole;
   name: string;
@@ -11,6 +27,8 @@ export interface UserSession {
   studentName?: string;
   parentEmail?: string;
   targetGrade: number;
+  currentWorkingGrade?: number; // Self-reported current level (1-9)
+  hasCompletedLevelCheckIn?: boolean;
   schoolYear?: number; // e.g. 8, 9, 10, 11
   emailReminders?: boolean;
   parentProgressReports?: boolean;
@@ -54,6 +72,8 @@ const STATS_COOKIE_KEY = 'gcse_daily_stats';
 const MASTERY_COOKIE_KEY = 'gcse_topic_masteries';
 const ANSWERED_QUESTIONS_KEY = 'gcse_answered_questions';
 const SCHEDULED_REVIEWS_KEY = 'gcse_scheduled_reviews';
+const TOPIC_COVERAGE_KEY = 'gcse_topic_coverage_v1';
+const FLASHCARD_PROGRESS_KEY = 'gcse_flashcard_progress_v1';
 
 const getTodayString = () => new Date().toISOString().split('T')[0];
 
@@ -555,6 +575,201 @@ export class UserStore {
       setCookie('gcse_stored_questions', JSON.stringify(updated));
       setCookie('gcse_cache_ver', UserStore.CURRENT_CACHE_VERSION);
     }
+  }
+
+  static getTopicCoverageMap(): Record<string, StudentTopicCoverage> {
+    if (typeof window !== 'undefined' && window.localStorage) {
+      const localRaw = window.localStorage.getItem(TOPIC_COVERAGE_KEY);
+      if (localRaw) {
+        try {
+          return JSON.parse(localRaw);
+        } catch {
+          // ignore
+        }
+      }
+    }
+    const raw = getCookie(TOPIC_COVERAGE_KEY);
+    if (raw) {
+      try {
+        return JSON.parse(raw);
+      } catch {
+        // ignore
+      }
+    }
+    return {};
+  }
+
+  static saveTopicCoverage(topicId: string, status: TopicCoverageStatus, selfAssessedGrade: number): void {
+    const map = UserStore.getTopicCoverageMap();
+    map[topicId] = {
+      topicId,
+      status,
+      selfAssessedGrade: Math.max(1, Math.min(9, selfAssessedGrade)),
+      updatedAt: getTodayString(),
+    };
+    const serialized = JSON.stringify(map);
+    if (typeof window !== 'undefined' && window.localStorage) {
+      window.localStorage.setItem(TOPIC_COVERAGE_KEY, serialized);
+    } else {
+      setCookie(TOPIC_COVERAGE_KEY, serialized);
+    }
+
+    // Also calibrate initial topic mastery if not yet practiced extensively
+    const masteries = UserStore.getTopicMasteries();
+    const existing = masteries[topicId];
+    const calibratedScore =
+      status === 'confident' ? 75 : status === 'needs_practice' ? 42 : 20;
+    const calibratedGrade = Math.max(4, Math.min(9, selfAssessedGrade));
+
+    if (!existing || existing.totalAttempted === 0) {
+      masteries[topicId] = {
+        topicId,
+        masteryScore: calibratedScore,
+        consecutiveCorrect: status === 'confident' ? 1 : 0,
+        totalAttempted: existing?.totalAttempted || 0,
+        totalCorrect: existing?.totalCorrect || 0,
+        currentGradeLevel: calibratedGrade,
+        isMastered: false,
+      };
+      setCookie(MASTERY_COOKIE_KEY, JSON.stringify(masteries));
+    }
+
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new Event('gcse_coverage_updated'));
+      window.dispatchEvent(new Event('gcse_masteries_updated'));
+    }
+  }
+
+  static saveBulkTopicCoverage(
+    items: Array<{ topicId: string; status: TopicCoverageStatus; selfAssessedGrade: number }>,
+    currentWorkingGrade?: number,
+    targetGrade?: number,
+    schoolYear?: number
+  ): void {
+    const map = UserStore.getTopicCoverageMap();
+    const masteries = UserStore.getTopicMasteries();
+    const today = getTodayString();
+
+    for (const item of items) {
+      map[item.topicId] = {
+        topicId: item.topicId,
+        status: item.status,
+        selfAssessedGrade: Math.max(1, Math.min(9, item.selfAssessedGrade)),
+        updatedAt: today,
+      };
+
+      const existing = masteries[item.topicId];
+      if (!existing || existing.totalAttempted === 0) {
+        const calibratedScore =
+          item.status === 'confident'
+            ? Math.min(85, 55 + item.selfAssessedGrade * 3)
+            : item.status === 'needs_practice'
+            ? 40
+            : 20;
+        masteries[item.topicId] = {
+          topicId: item.topicId,
+          masteryScore: calibratedScore,
+          consecutiveCorrect: item.status === 'confident' ? 1 : 0,
+          totalAttempted: existing?.totalAttempted || 0,
+          totalCorrect: existing?.totalCorrect || 0,
+          currentGradeLevel: Math.max(4, Math.min(9, item.selfAssessedGrade)),
+          isMastered: false,
+        };
+      }
+    }
+
+    const serialized = JSON.stringify(map);
+    if (typeof window !== 'undefined' && window.localStorage) {
+      window.localStorage.setItem(TOPIC_COVERAGE_KEY, serialized);
+    } else {
+      setCookie(TOPIC_COVERAGE_KEY, serialized);
+    }
+    setCookie(MASTERY_COOKIE_KEY, JSON.stringify(masteries));
+
+    const session = UserStore.getSession();
+    UserStore.saveSession({
+      ...session,
+      hasCompletedLevelCheckIn: true,
+      currentWorkingGrade: currentWorkingGrade ?? session.currentWorkingGrade ?? 6,
+      targetGrade: targetGrade ?? session.targetGrade,
+      schoolYear: schoolYear ?? session.schoolYear,
+    });
+
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new Event('gcse_coverage_updated'));
+      window.dispatchEvent(new Event('gcse_masteries_updated'));
+    }
+  }
+
+  static getFlashcardProgressMap(): Record<string, FlashcardTopicProgress> {
+    if (typeof window !== 'undefined' && window.localStorage) {
+      const localRaw = window.localStorage.getItem(FLASHCARD_PROGRESS_KEY);
+      if (localRaw) {
+        try {
+          return JSON.parse(localRaw);
+        } catch {
+          // ignore
+        }
+      }
+    }
+    const raw = getCookie(FLASHCARD_PROGRESS_KEY);
+    if (raw) {
+      try {
+        return JSON.parse(raw);
+      } catch {
+        // ignore
+      }
+    }
+    return {};
+  }
+
+  static updateFlashcardCardStatus(
+    topicId: string,
+    cardId: string,
+    rating: 'again' | 'good' | 'easy'
+  ): FlashcardTopicProgress {
+    const map = UserStore.getFlashcardProgressMap();
+    const current: FlashcardTopicProgress = map[topicId] || {
+      topicId,
+      masteredCardIds: [],
+      learningCardIds: [],
+      lastReviewedAt: getTodayString(),
+    };
+
+    const masteredSet = new Set(current.masteredCardIds);
+    const learningSet = new Set(current.learningCardIds);
+
+    if (rating === 'easy') {
+      masteredSet.add(cardId);
+      learningSet.delete(cardId);
+    } else if (rating === 'good') {
+      masteredSet.add(cardId);
+      learningSet.delete(cardId);
+    } else {
+      masteredSet.delete(cardId);
+      learningSet.add(cardId);
+    }
+
+    const updated: FlashcardTopicProgress = {
+      topicId,
+      masteredCardIds: Array.from(masteredSet),
+      learningCardIds: Array.from(learningSet),
+      lastReviewedAt: getTodayString(),
+    };
+
+    map[topicId] = updated;
+    const serialized = JSON.stringify(map);
+    if (typeof window !== 'undefined' && window.localStorage) {
+      window.localStorage.setItem(FLASHCARD_PROGRESS_KEY, serialized);
+    } else {
+      setCookie(FLASHCARD_PROGRESS_KEY, serialized);
+    }
+
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new Event('gcse_flashcards_updated'));
+    }
+
+    return updated;
   }
 
   static logout() {

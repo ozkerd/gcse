@@ -78,12 +78,24 @@ export default function TopicsPage() {
                         )}
                       </div>
 
-                      <div className="pt-2">
+                      <div className="pt-2 grid grid-cols-3 gap-2">
+                        <Link
+                          href={`/flashcards?topicId=${topic.id}`}
+                          className="inline-flex items-center justify-center gap-1.5 py-2 px-2.5 bg-purple-50 hover:bg-purple-100 border border-purple-200 font-bold text-xs text-purple-800 rounded-lg transition-colors"
+                        >
+                          <span>🃏 Flashcards</span>
+                        </Link>
+                        <Link
+                          href={`/flashcards?topicId=${topic.id}&mode=pods`}
+                          className="inline-flex items-center justify-center gap-1.5 py-2 px-2.5 bg-pink-50 hover:bg-pink-100 border border-pink-200 font-bold text-xs text-pink-800 rounded-lg transition-colors"
+                        >
+                          <span>🎧 Audio Pod</span>
+                        </Link>
                         <Link
                           href={`/practice?topic=${topic.id}`}
-                          className="w-full inline-flex items-center justify-center gap-2 py-2 px-3 bg-indigo-600 hover:bg-indigo-700 font-bold text-xs text-white rounded-lg transition-colors shadow-sm"
+                          className="inline-flex items-center justify-center gap-1.5 py-2 px-2.5 bg-indigo-600 hover:bg-indigo-700 font-bold text-xs text-white rounded-lg transition-colors shadow-sm"
                         >
-                          <span>Practice All Topic Questions</span>
+                          <span>Practice</span>
                           <ArrowRight className="w-3.5 h-3.5" />
                         </Link>
                       </div>
