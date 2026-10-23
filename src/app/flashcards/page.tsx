@@ -14,11 +14,9 @@ import {
   Shuffle,
   ChevronLeft,
   ChevronRight,
-  CheckCircle2,
   Sparkles,
   Flame,
   Lightbulb,
-  AlertTriangle,
   ArrowRight,
   Sliders,
   Award,
@@ -38,84 +36,126 @@ import { FormattedText } from '@/components/FormattedText';
 import { LevelCheckInModal } from '@/components/LevelCheckInModal';
 import { PodVisualDiagram } from '@/components/PodVisualDiagram';
 
-/**
- * Selects the most natural, human-sounding Neural/Premium UK English voice
- * available in the browser as a fallback when cloud neural audio isn't used.
- */
-function pickBestHumanBrowserVoice(
-  voices: SpeechSynthesisVoice[],
-  isCoachMale: boolean
-): SpeechSynthesisVoice | null {
-  if (!voices || voices.length === 0) return null;
+const MALE_VOICE_KEYWORDS = [
+  'google uk english male',
+  'daniel',
+  'oliver',
+  'arthur',
+  'ryan',
+  'george',
+  'thomas',
+  'james',
+  'david',
+  'mark',
+  'aaron',
+  'reed',
+  'alex',
+  'rishi',
+  'tom',
+  'gordon',
+  'lee',
+  'fred',
+];
 
-  const enVoices = voices.filter(
-    (v) =>
-      v.lang.toLowerCase().startsWith('en-gb') ||
-      v.lang.toLowerCase().startsWith('en_gb') ||
-      v.lang.toLowerCase().startsWith('en-')
+const FEMALE_VOICE_KEYWORDS = [
+  'google uk english female',
+  'serena',
+  'kate',
+  'martha',
+  'sonia',
+  'libby',
+  'hazel',
+  'samantha',
+  'victoria',
+  'karen',
+  'moira',
+  'tessa',
+  'fiona',
+  'ava',
+  'allison',
+  'susan',
+  'zoe',
+];
+
+function isExplicitMaleVoice(nameLower: string): boolean {
+  if (nameLower.includes('female')) return false;
+  if (/\bmale\b/.test(nameLower)) return true;
+  return MALE_VOICE_KEYWORDS.some((kw) => nameLower.includes(kw));
+}
+
+function isExplicitFemaleVoice(nameLower: string): boolean {
+  if (nameLower.includes('female')) return true;
+  return FEMALE_VOICE_KEYWORDS.some((kw) => nameLower.includes(kw));
+}
+
+/**
+ * Picks two guaranteed distinct voices:
+ * - Dan: Male UK/English voice
+ * - Mia: Female UK/English voice
+ */
+function selectDanAndMiaVoices(voices: SpeechSynthesisVoice[]): {
+  danVoice: SpeechSynthesisVoice | null;
+  miaVoice: SpeechSynthesisVoice | null;
+  sameUnderlyingVoice: boolean;
+} {
+  if (!voices || voices.length === 0) {
+    return { danVoice: null, miaVoice: null, sameUnderlyingVoice: true };
+  }
+
+  const enVoices = voices.filter((v) =>
+    v.lang.toLowerCase().replace('_', '-').startsWith('en')
   );
   const pool = enVoices.length > 0 ? enVoices : voices;
 
-  // Score voices by naturalness (Neural, Natural, Online, Google UK, Premium, Enhanced)
-  const scoreVoice = (v: SpeechSynthesisVoice): number => {
-    const name = v.name.toLowerCase();
-    const lang = v.lang.toLowerCase();
-    let score = 0;
-
-    if (lang.includes('gb') || lang.includes('uk')) score += 40;
-    if (name.includes('natural') || name.includes('neural') || name.includes('online'))
-      score += 60;
-    if (name.includes('google uk english')) score += 55;
-    if (name.includes('premium') || name.includes('enhanced') || name.includes('siri'))
-      score += 45;
-    if (name.includes('ryan') || name.includes('sonia') || name.includes('libby'))
-      score += 50;
-
-    // Penalize legacy robotic novelty voices
-    if (
-      name.includes('compact') ||
-      name.includes('eloquence') ||
-      name.includes('bells') ||
-      name.includes('whisper') ||
-      name.includes('zarvox') ||
-      name.includes('albert')
-    ) {
-      score -= 100;
-    }
-
-    if (isCoachMale) {
-      if (
-        name.includes('male') ||
-        name.includes('ryan') ||
-        name.includes('daniel') ||
-        name.includes('arthur') ||
-        name.includes('oliver') ||
-        name.includes('thomas') ||
-        name.includes('george')
-      ) {
-        score += 25;
-      }
-    } else {
-      if (
-        name.includes('female') ||
-        name.includes('sonia') ||
-        name.includes('libby') ||
-        name.includes('serena') ||
-        name.includes('kate') ||
-        name.includes('hazel') ||
-        name.includes('martha') ||
-        name.includes('amy')
-      ) {
-        score += 25;
-      }
-    }
-
-    return score;
+  const qualityScore = (v: SpeechSynthesisVoice): number => {
+    const n = v.name.toLowerCase();
+    const l = v.lang.toLowerCase();
+    let s = 0;
+    if (l.includes('gb') || l.includes('uk')) s += 35;
+    if (n.includes('natural') || n.includes('neural') || n.includes('online')) s += 50;
+    if (n.includes('google uk english')) s += 45;
+    if (n.includes('premium') || n.includes('enhanced')) s += 30;
+    if (n.includes('compact') || n.includes('zarvox') || n.includes('bells')) s -= 80;
+    return s;
   };
 
-  const sorted = [...pool].sort((a, b) => scoreVoice(b) - scoreVoice(a));
-  return sorted[0] || null;
+  const maleCandidates = pool
+    .filter((v) => isExplicitMaleVoice(v.name.toLowerCase()))
+    .sort((a, b) => qualityScore(b) - qualityScore(a));
+
+  const femaleCandidates = pool
+    .filter((v) => isExplicitFemaleVoice(v.name.toLowerCase()))
+    .sort((a, b) => qualityScore(b) - qualityScore(a));
+
+  const sortedAll = [...pool].sort((a, b) => qualityScore(b) - qualityScore(a));
+
+  const danVoice = maleCandidates[0] || sortedAll[0] || null;
+  const miaVoice =
+    femaleCandidates.find((v) => v.name !== danVoice?.name) ||
+    sortedAll.find((v) => v.name !== danVoice?.name) ||
+    danVoice;
+
+  const sameUnderlyingVoice =
+    !danVoice || !miaVoice || danVoice.name === miaVoice.name;
+
+  return { danVoice, miaVoice, sameUnderlyingVoice };
 }
+
+function cleanTextForSpeech(raw: string): string {
+  return raw
+    .replace(/\$\$/g, '')
+    .replace(/\$/g, '')
+    .replace(/\\frac\{([^}]+)\}\{([^}]+)\}/g, '$1 divided by $2')
+    .replace(/\\times/g, ' times ')
+    .replace(/\\div/g, ' divided by ')
+    .replace(/\\Delta/g, ' change in ')
+    .replace(/\\lambda/g, ' wavelength ')
+    .replace(/\\rightarrow/g, ' leads to ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+const SPEED_OPTIONS = [1, 1.25, 1.5, 1.75, 2];
 
 function FlashcardsAndPodsContent() {
   const searchParams = useSearchParams();
@@ -141,16 +181,22 @@ function FlashcardsAndPodsContent() {
   >({});
   const [coverageMap, setCoverageMap] = useState<Record<string, StudentTopicCoverage>>({});
 
-  // Audio-Visual Pod state
+  // Audio-Visual Pod state (default 1.25x so speech is brisk and energetic)
   const [activeSlideIdx, setActiveSlideIdx] = useState<number>(0);
   const [activeDialogueIdx, setActiveDialogueIdx] = useState<number>(0);
   const [isPlayingAudio, setIsPlayingAudio] = useState<boolean>(false);
-  const [playbackRate, setPlaybackRate] = useState<number>(1.0);
+  const [playbackRate, setPlaybackRate] = useState<number>(1.25);
   const [isMuted, setIsMuted] = useState<boolean>(false);
   const [spokenCharProgress, setSpokenCharProgress] = useState<number>(0);
 
+  // Refs to ensure instant speed changes and zero stale closures
   const speechActiveRef = useRef<boolean>(false);
-  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const playbackRateRef = useRef<number>(1.25);
+  const isMutedRef = useRef<boolean>(false);
+  const activeSlideIdxRef = useRef<number>(0);
+  const activeDialogueIdxRef = useRef<number>(0);
+  const spokenCharProgressRef = useRef<number>(0);
+  const utteranceSessionIdRef = useRef<number>(0);
   const progressTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const dialogueItemRefs = useRef<Array<HTMLButtonElement | null>>([]);
   const transcriptContainerRef = useRef<HTMLDivElement | null>(null);
@@ -158,6 +204,11 @@ function FlashcardsAndPodsContent() {
   useEffect(() => {
     setFlashcardProgressMap(UserStore.getFlashcardProgressMap());
     setCoverageMap(UserStore.getTopicCoverageMap());
+
+    // Pre-warm browser voices list
+    if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
+      window.speechSynthesis.getVoices();
+    }
 
     if (initialTopicParam) {
       const found = GCSE_TOPICS.find((t) => t.id === initialTopicParam);
@@ -188,7 +239,6 @@ function FlashcardsAndPodsContent() {
     };
   }, [initialTopicParam, initialSubjectParam]);
 
-  // Filter topics for selected subject
   const subjectTopics = useMemo(() => {
     const allInSubject = GCSE_TOPICS.filter((t) => t.subjectId === selectedSubjectId);
     if (!onlyCoveredTopics) return allInSubject;
@@ -229,9 +279,15 @@ function FlashcardsAndPodsContent() {
     stopPodAudio();
     setActiveSlideIdx(0);
     setActiveDialogueIdx(0);
+    activeSlideIdxRef.current = 0;
+    activeDialogueIdxRef.current = 0;
   }, [selectedTopicId, selectedCategory]);
 
   const currentCard: TopicFlashcard | undefined = filteredCards[cardIndex];
+  const currentTopicObj = useMemo(
+    () => GCSE_TOPICS.find((t) => t.id === selectedTopicId) || GCSE_TOPICS[0],
+    [selectedTopicId]
+  );
   const currentPod = useMemo(
     () => getTopicStudyPod(selectedTopicId),
     [selectedTopicId]
@@ -244,7 +300,7 @@ function FlashcardsAndPodsContent() {
     lastReviewedAt: '',
   };
 
-  // Auto-scroll active dialogue bubble inside the transcript container whenever activeDialogueIdx or activeSlideIdx changes
+  // Auto-scroll active dialogue bubble inside the transcript container
   useEffect(() => {
     if (activeMode !== 'pods') return;
     const activeEl = dialogueItemRefs.current[activeDialogueIdx];
@@ -328,28 +384,30 @@ function FlashcardsAndPodsContent() {
   };
 
   const stopPodAudio = () => {
+    utteranceSessionIdRef.current += 1;
     speechActiveRef.current = false;
     setIsPlayingAudio(false);
     setSpokenCharProgress(0);
+    spokenCharProgressRef.current = 0;
     clearProgressTimer();
 
-    if (audioRef.current) {
-      audioRef.current.pause();
-      audioRef.current.src = '';
-      audioRef.current = null;
-    }
     if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
       window.speechSynthesis.cancel();
     }
   };
 
   /**
-   * Speaks a dialogue line using:
-   * 1. Natural Human Neural UK Audio (/api/tts — Polly 'Brian' & 'Amy')
-   * 2. Fallback to highest-rated Neural Browser Voice with natural pitch = 1.0
+   * Speaks a dialogue line with:
+   * - Guaranteed distinct Male voice for Dan & Female voice for Mia
+   * - Live speed support (startCharOffset allows instant mid-sentence speed changes!)
    */
-  const speakDialogueLine = (slideIdx: number, lineIdx: number) => {
-    if (typeof window === 'undefined') return;
+  const speakDialogueLine = (
+    slideIdx: number,
+    lineIdx: number,
+    startCharOffset = 0
+  ) => {
+    if (typeof window === 'undefined' || !('speechSynthesis' in window)) return;
+
     const slide = currentPod.slides[slideIdx];
     if (!slide) {
       stopPodAudio();
@@ -358,116 +416,108 @@ function FlashcardsAndPodsContent() {
     const line = slide.dialogue[lineIdx];
     if (!line) {
       if (slideIdx + 1 < currentPod.slides.length) {
+        activeSlideIdxRef.current = slideIdx + 1;
+        activeDialogueIdxRef.current = 0;
         setActiveSlideIdx(slideIdx + 1);
         setActiveDialogueIdx(0);
-        speakDialogueLine(slideIdx + 1, 0);
+        speakDialogueLine(slideIdx + 1, 0, 0);
       } else {
         stopPodAudio();
       }
       return;
     }
 
+    activeSlideIdxRef.current = slideIdx;
+    activeDialogueIdxRef.current = lineIdx;
     setActiveSlideIdx(slideIdx);
     setActiveDialogueIdx(lineIdx);
-    setSpokenCharProgress(0);
+    setSpokenCharProgress(startCharOffset);
+    spokenCharProgressRef.current = startCharOffset;
     clearProgressTimer();
 
-    if (audioRef.current) {
-      audioRef.current.pause();
-      audioRef.current = null;
+    const currentSessionId = ++utteranceSessionIdRef.current;
+    window.speechSynthesis.cancel();
+
+    if (isMutedRef.current) return;
+
+    const fullText = cleanTextForSpeech(line.text);
+    const remainingText =
+      startCharOffset > 0 && startCharOffset < fullText.length
+        ? fullText.slice(startCharOffset)
+        : fullText;
+    const baseOffset =
+      startCharOffset > 0 && startCharOffset < fullText.length
+        ? startCharOffset
+        : 0;
+
+    const isDanMale = line.speaker === 'Dan';
+    const currentSpeed = playbackRateRef.current;
+
+    const utterance = new SpeechSynthesisUtterance(remainingText);
+    utterance.lang = 'en-GB';
+    utterance.rate = currentSpeed;
+
+    const voices = window.speechSynthesis.getVoices();
+    const { danVoice, miaVoice, sameUnderlyingVoice } =
+      selectDanAndMiaVoices(voices);
+
+    if (isDanMale) {
+      if (danVoice) utterance.voice = danVoice;
+      // Distinct male vs female pitch separation
+      utterance.pitch = sameUnderlyingVoice ? 0.82 : 0.94;
+    } else {
+      if (miaVoice) utterance.voice = miaVoice;
+      utterance.pitch = sameUnderlyingVoice ? 1.18 : 1.06;
     }
-    if ('speechSynthesis' in window) {
-      window.speechSynthesis.cancel();
-    }
 
-    if (isMuted) return;
+    utterance.onboundary = (event) => {
+      if (utteranceSessionIdRef.current !== currentSessionId) return;
+      if (typeof event.charIndex === 'number') {
+        const nextProgress = Math.min(
+          line.text.length,
+          baseOffset + event.charIndex
+        );
+        spokenCharProgressRef.current = nextProgress;
+        setSpokenCharProgress(nextProgress);
+      }
+    };
 
-    const isCoach = line.speaker.includes('Alex');
-    const totalChars = line.text.length;
+    // Smooth timer for word highlighting across all browsers
+    const charsPerSecond = 14.5 * currentSpeed;
+    const estDurationMs = Math.max(
+      800,
+      (remainingText.length / charsPerSecond) * 1000
+    );
+    const startTime = Date.now();
+    progressTimerRef.current = setInterval(() => {
+      if (utteranceSessionIdRef.current !== currentSessionId) return;
+      const elapsed = Date.now() - startTime;
+      const pct = Math.min(1, elapsed / estDurationMs);
+      const nextChar = Math.min(
+        line.text.length,
+        baseOffset + Math.floor(pct * remainingText.length)
+      );
+      if (nextChar > spokenCharProgressRef.current) {
+        spokenCharProgressRef.current = nextChar;
+        setSpokenCharProgress(nextChar);
+      }
+    }, 60);
 
-    const advanceToNext = () => {
+    utterance.onend = () => {
+      if (utteranceSessionIdRef.current !== currentSessionId) return;
       clearProgressTimer();
-      setSpokenCharProgress(totalChars);
+      setSpokenCharProgress(line.text.length);
+      spokenCharProgressRef.current = line.text.length;
       if (!speechActiveRef.current) return;
-      speakDialogueLine(slideIdx, lineIdx + 1);
+      speakDialogueLine(slideIdx, lineIdx + 1, 0);
     };
 
-    const fallbackToNeuralBrowserSpeech = () => {
-      if (!('speechSynthesis' in window) || !speechActiveRef.current) {
-        stopPodAudio();
-        return;
-      }
-
-      const utterance = new SpeechSynthesisUtterance(line.text);
-      utterance.lang = 'en-GB';
-      utterance.rate = playbackRate;
-      // Keep pitch at 1.0 so neural voices never sound metallic or robotic
-      utterance.pitch = 1.0;
-
-      const voices = window.speechSynthesis.getVoices();
-      const bestVoice = pickBestHumanBrowserVoice(voices, isCoach);
-      if (bestVoice) {
-        utterance.voice = bestVoice;
-      }
-
-      utterance.onboundary = (event) => {
-        if (typeof event.charIndex === 'number') {
-          setSpokenCharProgress(event.charIndex);
-        }
-      };
-
-      // Smooth progress fallback in case browser doesn't fire onboundary
-      const estDurationMs = Math.max(2000, (totalChars / 15) * (1000 / playbackRate));
-      const startTime = Date.now();
-      progressTimerRef.current = setInterval(() => {
-        const elapsed = Date.now() - startTime;
-        const pct = Math.min(1, elapsed / estDurationMs);
-        setSpokenCharProgress(Math.floor(pct * totalChars));
-      }, 80);
-
-      utterance.onend = () => {
-        advanceToNext();
-      };
-      utterance.onerror = () => {
-        stopPodAudio();
-      };
-
-      window.speechSynthesis.speak(utterance);
+    utterance.onerror = () => {
+      if (utteranceSessionIdRef.current !== currentSessionId) return;
+      clearProgressTimer();
     };
 
-    // Try Natural Human Neural Audio stream first (/api/tts)
-    try {
-      const ttsUrl = `/api/tts?speaker=${encodeURIComponent(
-        isCoach ? 'Alex' : 'Maya'
-      )}&text=${encodeURIComponent(line.text)}`;
-      const audio = new Audio(ttsUrl);
-      audio.playbackRate = playbackRate;
-      audioRef.current = audio;
-
-      audio.ontimeupdate = () => {
-        if (audio.duration && audio.duration > 0) {
-          const ratio = Math.min(1, audio.currentTime / audio.duration);
-          setSpokenCharProgress(Math.floor(ratio * totalChars));
-        }
-      };
-
-      audio.onended = () => {
-        advanceToNext();
-      };
-
-      audio.onerror = () => {
-        fallbackToNeuralBrowserSpeech();
-      };
-
-      const playPromise = audio.play();
-      if (playPromise !== undefined) {
-        playPromise.catch(() => {
-          fallbackToNeuralBrowserSpeech();
-        });
-      }
-    } catch {
-      fallbackToNeuralBrowserSpeech();
-    }
+    window.speechSynthesis.speak(utterance);
   };
 
   const togglePlayPod = () => {
@@ -476,7 +526,34 @@ function FlashcardsAndPodsContent() {
     } else {
       speechActiveRef.current = true;
       setIsPlayingAudio(true);
-      speakDialogueLine(activeSlideIdx, activeDialogueIdx);
+      speakDialogueLine(activeSlideIdxRef.current, activeDialogueIdxRef.current, 0);
+    }
+  };
+
+  /**
+   * Instant speed change: updates playbackRateRef and immediately applies
+   * the new speed to whichever speaker is currently talking!
+   */
+  const handleSpeedChange = (newRate: number) => {
+    playbackRateRef.current = newRate;
+    setPlaybackRate(newRate);
+
+    if (isPlayingAudio && speechActiveRef.current) {
+      // Snap offset to previous space so it resumes cleanly from the current word
+      const slide = currentPod.slides[activeSlideIdxRef.current];
+      const line = slide?.dialogue[activeDialogueIdxRef.current];
+      let resumeOffset = spokenCharProgressRef.current;
+      if (line && resumeOffset > 0 && resumeOffset < line.text.length - 5) {
+        const prevSpace = line.text.lastIndexOf(' ', resumeOffset);
+        resumeOffset = prevSpace > 0 ? prevSpace + 1 : 0;
+      } else {
+        resumeOffset = 0;
+      }
+      speakDialogueLine(
+        activeSlideIdxRef.current,
+        activeDialogueIdxRef.current,
+        resumeOffset
+      );
     }
   };
 
@@ -493,13 +570,13 @@ function FlashcardsAndPodsContent() {
           <div className="space-y-2 max-w-2xl">
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-500/20 border border-indigo-400/30 text-indigo-200 text-xs font-extrabold uppercase tracking-wider">
               <Sparkles className="w-3.5 h-3.5 text-amber-300" />
-              <span>Interactive GCSE Revision Studio</span>
+              <span>GCSE Study Hub</span>
             </div>
             <h1 className="text-2xl sm:text-3xl font-black tracking-tight">
-              Flashcards & Audio-Visual Exam Hack Pods
+              Flashcards & Audio Lessons
             </h1>
             <p className="text-slate-300 text-xs sm:text-sm leading-relaxed">
-              Master the crucial formulas, visual logic diagrams, and examiner traps across all 103 GCSE topics with 3D spaced-repetition flashcards and natural British voiceover slide presentations.
+              Learn the key formulas, 3-step methods, and worked examples for every GCSE topic.
             </p>
           </div>
 
@@ -519,7 +596,7 @@ function FlashcardsAndPodsContent() {
                 }`}
               >
                 <Layers className="w-4 h-4" />
-                <span>3D Flashcards ({rawCards.length})</span>
+                <span>Flashcards ({rawCards.length})</span>
               </button>
               <button
                 type="button"
@@ -531,7 +608,7 @@ function FlashcardsAndPodsContent() {
                 }`}
               >
                 <Headphones className="w-4 h-4" />
-                <span>Audio & Visual Pod</span>
+                <span>Audio Lesson</span>
               </button>
             </div>
 
@@ -541,7 +618,7 @@ function FlashcardsAndPodsContent() {
               className="px-4 py-3 rounded-2xl bg-amber-400 hover:bg-amber-300 text-slate-950 font-black text-xs flex items-center justify-center gap-2 shadow-lg transition-all"
             >
               <Sliders className="w-4 h-4" />
-              <span>My Level & Covered Topics</span>
+              <span>My Level & Topics</span>
             </button>
           </div>
         </div>
@@ -570,7 +647,7 @@ function FlashcardsAndPodsContent() {
 
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div className="flex flex-wrap items-center gap-2">
-              <span className="text-xs font-bold text-indigo-200">Select Topic:</span>
+              <span className="text-xs font-bold text-indigo-200">Topic:</span>
               <select
                 value={selectedTopicId}
                 onChange={(e) => setSelectedTopicId(e.target.value)}
@@ -595,11 +672,10 @@ function FlashcardsAndPodsContent() {
 
               {currentTopicCoverage && currentTopicCoverage.status !== 'not_covered' && (
                 <span className="px-3 py-1 rounded-full bg-emerald-500/20 border border-emerald-400/40 text-emerald-200 text-[11px] font-bold">
-                  School Status:{' '}
                   {currentTopicCoverage.status === 'confident'
-                    ? 'Covered & Confident'
-                    : 'Covered (Need Practice)'}{' '}
-                  • My Level: Grade {currentTopicCoverage.selfAssessedGrade}
+                    ? 'Confident'
+                    : 'Needs Practice'}{' '}
+                  • Grade {currentTopicCoverage.selfAssessedGrade}
                 </span>
               )}
             </div>
@@ -611,7 +687,7 @@ function FlashcardsAndPodsContent() {
                 onChange={(e) => setOnlyCoveredTopics(e.target.checked)}
                 className="rounded border-indigo-400 text-indigo-600 focus:ring-indigo-500"
               />
-              <span>Filter by topics I’ve covered at school</span>
+              <span>Only topics covered in school</span>
             </label>
           </div>
         </div>
@@ -654,7 +730,7 @@ function FlashcardsAndPodsContent() {
                 className="px-3 py-1.5 rounded-xl bg-purple-50 dark:bg-purple-950/60 text-purple-700 dark:text-purple-300 border border-purple-200 dark:border-purple-800 text-xs font-bold flex items-center gap-1.5 hover:bg-purple-100"
               >
                 <Shuffle className="w-3.5 h-3.5" />
-                <span>Shuffle Deck</span>
+                <span>Shuffle</span>
               </button>
             </div>
 
@@ -673,9 +749,7 @@ function FlashcardsAndPodsContent() {
                             : 'bg-indigo-100 dark:bg-indigo-950 text-indigo-800 dark:text-indigo-300'
                         }`}
                       >
-                        {isFlipped
-                          ? '✨ Back: Answer & Exam Hack'
-                          : `📌 Front: ${currentCard.category}`}
+                        {isFlipped ? 'Answer' : currentCard.category}
                       </span>
                       <span className="px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 text-xs font-bold">
                         Grade {currentCard.gradeLevel}
@@ -683,7 +757,7 @@ function FlashcardsAndPodsContent() {
                     </div>
 
                     <span className="text-xs font-extrabold text-slate-400">
-                      Card {cardIndex + 1} of {filteredCards.length}
+                      {cardIndex + 1} / {filteredCards.length}
                     </span>
                   </div>
 
@@ -701,7 +775,7 @@ function FlashcardsAndPodsContent() {
                         {currentCard.formulaHighlight && (
                           <div className="p-4 rounded-2xl bg-indigo-50/90 dark:bg-indigo-950/60 border border-indigo-200 dark:border-indigo-800 text-indigo-950 dark:text-indigo-200 font-bold text-sm sm:text-base">
                             <div className="text-[10px] font-black uppercase tracking-wider text-indigo-600 dark:text-indigo-400 mb-1">
-                              Golden Formula / Structure to Memorise
+                              Key Formula
                             </div>
                             <FormattedText text={`$$${currentCard.formulaHighlight}$$`} />
                           </div>
@@ -711,7 +785,7 @@ function FlashcardsAndPodsContent() {
                           <div className="p-3.5 rounded-2xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800/80 text-amber-900 dark:text-amber-200 text-xs font-semibold flex items-start gap-2.5">
                             <Lightbulb className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
                             <div>
-                              <span className="font-extrabold">Examiner Hack: </span>
+                              <span className="font-extrabold">Exam Tip: </span>
                               <FormattedText text={currentCard.examTip} />
                             </div>
                           </div>
@@ -723,7 +797,7 @@ function FlashcardsAndPodsContent() {
                   <div className="flex items-center justify-between pt-4 border-t border-slate-100 dark:border-slate-800 text-xs font-bold text-slate-400">
                     <span>Click card or press Spacebar to flip</span>
                     <span className="text-indigo-600 dark:text-indigo-400 font-extrabold">
-                      {isFlipped ? 'Show Question Front ↺' : 'Reveal Answer & Formula →'}
+                      {isFlipped ? 'Show Question ↺' : 'Show Answer →'}
                     </span>
                   </div>
                 </div>
@@ -745,7 +819,7 @@ function FlashcardsAndPodsContent() {
                       <ChevronLeft className="w-5 h-5" />
                     </button>
                     <span className="text-xs font-bold text-slate-500 px-2">
-                      Rate how well you knew this card:
+                      How well did you know this?
                     </span>
                   </div>
 
@@ -762,14 +836,14 @@ function FlashcardsAndPodsContent() {
                       onClick={() => handleRateCard('good')}
                       className="px-4 py-2.5 rounded-xl bg-amber-50 dark:bg-amber-950/60 hover:bg-amber-100 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-800 text-xs font-extrabold transition-all"
                     >
-                      🟡 Getting There
+                      🟡 Almost Got It
                     </button>
                     <button
                       type="button"
                       onClick={() => handleRateCard('easy')}
                       className="px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-extrabold shadow-sm transition-all"
                     >
-                      🟢 Mastered!
+                      🟢 Got It!
                     </button>
                   </div>
 
@@ -793,7 +867,7 @@ function FlashcardsAndPodsContent() {
             <div className="bg-white dark:bg-slate-900 p-6 rounded-3xl border border-slate-200 dark:border-slate-800 space-y-4">
               <div className="flex items-center justify-between">
                 <h3 className="font-extrabold text-slate-900 dark:text-slate-100 text-base">
-                  Topic Flashcard Mastery
+                  Your Progress
                 </h3>
                 <Award className="w-5 h-5 text-indigo-600" />
               </div>
@@ -804,7 +878,7 @@ function FlashcardsAndPodsContent() {
                     {topicProgress.masteredCardIds.length} / {rawCards.length}
                   </div>
                   <div className="text-[11px] font-bold text-emerald-600 dark:text-emerald-400">
-                    Cards Mastered
+                    Mastered
                   </div>
                 </div>
                 <div className="p-3.5 rounded-2xl bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-800">
@@ -812,7 +886,7 @@ function FlashcardsAndPodsContent() {
                     {topicProgress.learningCardIds.length}
                   </div>
                   <div className="text-[11px] font-bold text-rose-600 dark:text-rose-400">
-                    Marked for Review
+                    To Review
                   </div>
                 </div>
               </div>
@@ -820,10 +894,10 @@ function FlashcardsAndPodsContent() {
               <div className="p-4 rounded-2xl bg-gradient-to-br from-purple-900 to-indigo-950 text-white space-y-2.5">
                 <div className="flex items-center gap-2 text-pink-300 text-xs font-extrabold uppercase">
                   <Headphones className="w-4 h-4" />
-                  <span>Prefer Audio + Visual Diagrams?</span>
+                  <span>Audio Lesson</span>
                 </div>
                 <p className="text-xs text-slate-200 leading-relaxed">
-                  Listen to Alex & Maya break down the visual formula triangle and 60-second exam shortcuts for{' '}
+                  Listen to Dan & Mia explain the key formulas and worked examples for{' '}
                   <strong>{currentPod.topicName}</strong>.
                 </p>
                 <button
@@ -832,7 +906,7 @@ function FlashcardsAndPodsContent() {
                   className="w-full py-2.5 px-4 rounded-xl bg-white text-indigo-950 font-extrabold text-xs hover:bg-indigo-50 transition-all flex items-center justify-center gap-2"
                 >
                   <Play className="w-3.5 h-3.5 fill-indigo-950" />
-                  <span>Watch & Listen to Study Pod</span>
+                  <span>Listen to Lesson</span>
                 </button>
               </div>
 
@@ -840,7 +914,7 @@ function FlashcardsAndPodsContent() {
                 href={`/practice?topicId=${selectedTopicId}`}
                 className="w-full py-3 px-4 rounded-2xl bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold text-xs flex items-center justify-center gap-2 shadow-md transition-all"
               >
-                <span>Practice Adaptive Questions on This Topic</span>
+                <span>Practice Questions on This Topic</span>
                 <ArrowRight className="w-4 h-4" />
               </Link>
             </div>
@@ -848,7 +922,7 @@ function FlashcardsAndPodsContent() {
             <div className="bg-white dark:bg-slate-900 p-6 rounded-3xl border border-slate-200 dark:border-slate-800 space-y-3">
               <div className="flex items-center gap-2 text-xs font-extrabold uppercase tracking-wider text-indigo-600 dark:text-indigo-400">
                 <Flame className="w-4 h-4" />
-                <span>3 Rules That Solve 90% of Problems</span>
+                <span>3 Key Steps</span>
               </div>
               <ul className="space-y-2.5 text-xs text-slate-700 dark:text-slate-300 font-medium">
                 {currentPod.threeThingsToKnow.map((rule, i) => (
@@ -865,10 +939,10 @@ function FlashcardsAndPodsContent() {
         </div>
       )}
 
-      {/* MODE 2: NOTEBOOK-LM STYLE AUDIO & VISUAL STUDY POD */}
+      {/* MODE 2: AUDIO & VISUAL LESSON */}
       {activeMode === 'pods' && (
         <div className="grid lg:grid-cols-12 gap-6">
-          {/* Left 7 Columns: Visual Slide Presentation Deck + Interactive Formula Diagram + Live Captions */}
+          {/* Left 7 Columns: Clean Topic Slide + Live Spoken Text + Topic Visual */}
           <div className="lg:col-span-7 space-y-4">
             <div className="bg-gradient-to-br from-slate-900 via-indigo-950 to-purple-950 text-white rounded-3xl p-6 sm:p-8 border border-indigo-800/70 shadow-xl flex flex-col justify-between relative overflow-hidden space-y-5">
               {/* Slide Header & Step Dots */}
@@ -884,6 +958,8 @@ function FlashcardsAndPodsContent() {
                       type="button"
                       onClick={() => {
                         stopPodAudio();
+                        activeSlideIdxRef.current = idx;
+                        activeDialogueIdxRef.current = 0;
                         setActiveSlideIdx(idx);
                         setActiveDialogueIdx(0);
                       }}
@@ -903,11 +979,11 @@ function FlashcardsAndPodsContent() {
                 {activeSlide.title}
               </h2>
 
-              {/* LIVE TELEPROMPTER / SPOKEN SUBTITLE BAR ON THE STAGE */}
+              {/* LIVE SPOKEN SUBTITLE BOX ON THE SLIDE */}
               {activeDialogueLine && (
                 <div className="p-4 rounded-2xl bg-indigo-950/90 border-2 border-pink-400/50 shadow-lg space-y-1.5 transition-all">
                   <div className="flex items-center justify-between">
-                    <span className="text-[11px] font-black uppercase tracking-wider text-pink-300 flex items-center gap-2">
+                    <span className="text-xs font-black uppercase tracking-wider text-pink-300 flex items-center gap-2">
                       <span
                         className={`w-2 h-2 rounded-full ${
                           isPlayingAudio
@@ -915,14 +991,10 @@ function FlashcardsAndPodsContent() {
                             : 'bg-amber-400'
                         }`}
                       />
-                      <span>
-                        {activeDialogueLine.speaker.includes('Alex')
-                          ? '🎓 Alex (GCSE Coach) — Live Caption'
-                          : '🙋‍♀️ Maya (Year 11 Student) — Live Caption'}
-                      </span>
+                      <span>{activeDialogueLine.speaker}</span>
                     </span>
-                    <span className="text-[10px] font-bold text-indigo-300">
-                      Line {activeDialogueIdx + 1} of {activeSlide.dialogue.length}
+                    <span className="text-[11px] font-bold text-indigo-300">
+                      {activeDialogueIdx + 1} / {activeSlide.dialogue.length}
                     </span>
                   </div>
                   <p className="text-sm sm:text-base font-bold leading-relaxed text-white">
@@ -942,50 +1014,19 @@ function FlashcardsAndPodsContent() {
                 </div>
               )}
 
-              {/* INTERACTIVE VISUAL FORMULA & LOGIC DIAGRAM */}
+              {/* TOPIC-SPECIFIC VISUAL BOARD (Formulas, 3 Steps, Worked Steps, or Mistake vs Tip) */}
               <PodVisualDiagram
-                subjectId={currentPod.subjectId}
                 topicName={currentPod.topicName}
+                unitName={currentTopicObj.unitName}
                 visualType={activeSlide.visualType}
                 headlineFormula={activeSlide.headlineFormula}
+                goldenFormulae={currentPod.goldenFormulae}
+                keyTakeaways={activeSlide.keyTakeaways}
+                keywords={currentTopicObj.keywords}
+                comparison={activeSlide.comparison}
                 activeDialogueIdx={activeDialogueIdx}
                 isPlaying={isPlayingAudio}
               />
-
-              {/* Visual Key Takeaways */}
-              <div className="space-y-2">
-                {activeSlide.keyTakeaways.map((pt, idx) => (
-                  <div
-                    key={idx}
-                    className="p-3 rounded-2xl bg-slate-900/70 border border-white/10 flex items-start gap-3 text-xs sm:text-sm text-slate-100 font-medium"
-                  >
-                    <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
-                    <div className="leading-relaxed">
-                      <FormattedText text={pt} />
-                    </div>
-                  </div>
-                ))}
-              </div>
-
-              {/* Optional Trap vs Grade 9 Comparison */}
-              {activeSlide.comparison && (
-                <div className="grid sm:grid-cols-2 gap-3">
-                  <div className="p-3.5 rounded-2xl bg-rose-950/60 border border-rose-500/40 text-xs">
-                    <div className="font-black text-rose-300 uppercase mb-1 flex items-center gap-1.5">
-                      <AlertTriangle className="w-3.5 h-3.5" />
-                      <span>Common Grade 5 Trap</span>
-                    </div>
-                    <p className="text-rose-100">{activeSlide.comparison.commonTrap}</p>
-                  </div>
-                  <div className="p-3.5 rounded-2xl bg-emerald-950/60 border border-emerald-500/40 text-xs">
-                    <div className="font-black text-emerald-300 uppercase mb-1 flex items-center gap-1.5">
-                      <Sparkles className="w-3.5 h-3.5" />
-                      <span>Grade 9 Examiner Booster</span>
-                    </div>
-                    <p className="text-emerald-100">{activeSlide.comparison.grade9Fix}</p>
-                  </div>
-                </div>
-              )}
 
               {/* Slide Footer Controls */}
               <div className="pt-4 border-t border-white/10 flex items-center justify-between">
@@ -994,17 +1035,20 @@ function FlashcardsAndPodsContent() {
                   disabled={activeSlideIdx === 0}
                   onClick={() => {
                     stopPodAudio();
-                    setActiveSlideIdx((prev) => Math.max(0, prev - 1));
+                    const prev = Math.max(0, activeSlideIdx - 1);
+                    activeSlideIdxRef.current = prev;
+                    activeDialogueIdxRef.current = 0;
+                    setActiveSlideIdx(prev);
                     setActiveDialogueIdx(0);
                   }}
                   className="px-3.5 py-2 rounded-xl bg-white/10 hover:bg-white/20 disabled:opacity-30 text-xs font-bold flex items-center gap-1.5"
                 >
                   <ChevronLeft className="w-4 h-4" />
-                  <span>Prev Slide</span>
+                  <span>Back</span>
                 </button>
 
                 <span className="text-xs font-bold text-indigo-200">
-                  Visual Slide {activeSlideIdx + 1} of {currentPod.slides.length}
+                  Slide {activeSlideIdx + 1} of {currentPod.slides.length}
                 </span>
 
                 <button
@@ -1012,25 +1056,29 @@ function FlashcardsAndPodsContent() {
                   disabled={activeSlideIdx === currentPod.slides.length - 1}
                   onClick={() => {
                     stopPodAudio();
-                    setActiveSlideIdx((prev) =>
-                      Math.min(currentPod.slides.length - 1, prev + 1)
+                    const next = Math.min(
+                      currentPod.slides.length - 1,
+                      activeSlideIdx + 1
                     );
+                    activeSlideIdxRef.current = next;
+                    activeDialogueIdxRef.current = 0;
+                    setActiveSlideIdx(next);
                     setActiveDialogueIdx(0);
                   }}
                   className="px-3.5 py-2 rounded-xl bg-white/10 hover:bg-white/20 disabled:opacity-30 text-xs font-bold flex items-center gap-1.5"
                 >
-                  <span>Next Slide</span>
+                  <span>Next</span>
                   <ChevronRight className="w-4 h-4" />
                 </button>
               </div>
             </div>
           </div>
 
-          {/* Right 5 Columns: Natural UK Voice Player & Auto-Scrolling Transcript */}
+          {/* Right 5 Columns: Simple Player, Instant Speed Buttons (up to 2x), Auto-Scrolling Dialogue */}
           <div className="lg:col-span-5 space-y-4">
             <div className="bg-white dark:bg-slate-900 p-6 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-5">
               {/* Audio Player Control Bar */}
-              <div className="p-4 rounded-2xl bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 text-white space-y-3 shadow-md">
+              <div className="p-4 rounded-2xl bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 text-white space-y-3.5 shadow-md">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
                     <button
@@ -1045,14 +1093,10 @@ function FlashcardsAndPodsContent() {
                       )}
                     </button>
                     <div>
-                      <div className="text-[11px] font-black uppercase tracking-wider text-pink-200">
-                        {isPlayingAudio
-                          ? '🔊 Playing Natural UK Neural Voice...'
-                          : '🎧 Click Play for Natural Voiceover'}
+                      <div className="text-xs font-black uppercase tracking-wider text-pink-200">
+                        {isPlayingAudio ? 'Playing Lesson' : 'Audio Lesson'}
                       </div>
-                      <div className="text-sm font-extrabold">
-                        Alex (Brian UK) & Maya (Amy UK)
-                      </div>
+                      <div className="text-base font-extrabold">Dan & Mia</div>
                     </div>
                   </div>
 
@@ -1060,29 +1104,15 @@ function FlashcardsAndPodsContent() {
                     <button
                       type="button"
                       onClick={() => {
-                        const nextRate =
-                          playbackRate === 1.0 ? 1.25 : playbackRate === 1.25 ? 1.5 : 1.0;
-                        setPlaybackRate(nextRate);
-                        if (audioRef.current) {
-                          audioRef.current.playbackRate = nextRate;
-                        }
-                      }}
-                      className="px-2.5 py-1 rounded-lg bg-white/20 hover:bg-white/30 text-xs font-black"
-                      title="Change narration speed"
-                    >
-                      {playbackRate}x
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => {
                         const nextMuted = !isMuted;
+                        isMutedRef.current = nextMuted;
                         setIsMuted(nextMuted);
                         if (nextMuted) {
                           stopPodAudio();
                         }
                       }}
                       className="p-2 rounded-lg bg-white/20 hover:bg-white/30"
-                      title="Mute / Unmute voice"
+                      title="Mute / Unmute"
                     >
                       {isMuted ? (
                         <VolumeX className="w-4 h-4" />
@@ -1094,26 +1124,46 @@ function FlashcardsAndPodsContent() {
                       type="button"
                       onClick={() => {
                         stopPodAudio();
+                        activeSlideIdxRef.current = 0;
+                        activeDialogueIdxRef.current = 0;
                         setActiveSlideIdx(0);
                         setActiveDialogueIdx(0);
                       }}
                       className="p-2 rounded-lg bg-white/20 hover:bg-white/30"
-                      title="Restart Pod"
+                      title="Restart"
                     >
                       <RotateCcw className="w-4 h-4" />
                     </button>
                   </div>
                 </div>
+
+                {/* Instant Speed Selector Bar (1x, 1.25x, 1.5x, 1.75x, 2x) */}
+                <div className="flex items-center justify-between pt-2 border-t border-white/20">
+                  <span className="text-xs font-bold text-pink-100">Speed:</span>
+                  <div className="flex items-center gap-1">
+                    {SPEED_OPTIONS.map((spd) => (
+                      <button
+                        key={spd}
+                        type="button"
+                        onClick={() => handleSpeedChange(spd)}
+                        className={`px-2.5 py-1 rounded-lg text-xs font-black transition-all ${
+                          playbackRate === spd
+                            ? 'bg-white text-indigo-900 shadow-xs'
+                            : 'bg-white/15 hover:bg-white/25 text-white'
+                        }`}
+                      >
+                        {spd}x
+                      </button>
+                    ))}
+                  </div>
+                </div>
               </div>
 
-              {/* Auto-Scrolling Conversational Transcript for Active Slide */}
+              {/* Auto-Scrolling Dialogue List */}
               <div className="space-y-3">
                 <div className="flex items-center justify-between text-xs font-extrabold text-slate-500 uppercase tracking-wider">
-                  <span>Auto-Scrolling Live Transcript</span>
-                  <span>
-                    Slide {activeSlideIdx + 1} • Line {activeDialogueIdx + 1}/
-                    {activeSlide.dialogue.length}
-                  </span>
+                  <span>Lesson Script</span>
+                  <span>Slide {activeSlideIdx + 1}</span>
                 </div>
 
                 <div
@@ -1121,7 +1171,7 @@ function FlashcardsAndPodsContent() {
                   className="space-y-3 max-h-[340px] overflow-y-auto pr-1 scroll-smooth"
                 >
                   {activeSlide.dialogue.map((line, idx) => {
-                    const isCoach = line.speaker.includes('Alex');
+                    const isDan = line.speaker === 'Dan';
                     const isCurrentLine = activeDialogueIdx === idx;
                     return (
                       <button
@@ -1133,29 +1183,27 @@ function FlashcardsAndPodsContent() {
                         onClick={() => {
                           speechActiveRef.current = true;
                           setIsPlayingAudio(true);
-                          speakDialogueLine(activeSlideIdx, idx);
+                          speakDialogueLine(activeSlideIdx, idx, 0);
                         }}
                         className={`w-full text-left p-4 rounded-2xl border transition-all duration-300 ${
                           isCurrentLine
-                            ? 'border-indigo-600 bg-indigo-50 dark:bg-indigo-950/90 ring-2 ring-indigo-500/40 shadow-md scale-[1.01]'
+                            ? 'border-indigo-600 bg-indigo-50 dark:bg-indigo-950/90 ring-2 ring-indigo-500/40 shadow-md'
                             : 'border-slate-200 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-800/50 opacity-75 hover:opacity-100 hover:border-indigo-300'
                         }`}
                       >
                         <div className="flex items-center justify-between mb-1.5">
                           <span
                             className={`text-xs font-black uppercase tracking-wider ${
-                              isCoach
+                              isDan
                                 ? 'text-indigo-600 dark:text-indigo-400'
                                 : 'text-pink-600 dark:text-pink-400'
                             }`}
                           >
-                            {isCoach
-                              ? '🎓 Alex (GCSE Coach)'
-                              : '🙋‍♀️ Maya (Year 11 Student)'}
+                            {isDan ? 'Dan' : 'Mia'}
                           </span>
                           {isCurrentLine && isPlayingAudio && (
-                            <span className="px-2 py-0.5 rounded-full bg-indigo-600 text-white text-[10px] font-extrabold animate-pulse">
-                              🔊 Speaking Now
+                            <span className="px-2 py-0.5 rounded-full bg-indigo-600 text-white text-[10px] font-extrabold">
+                              Speaking
                             </span>
                           )}
                         </div>
@@ -1188,14 +1236,14 @@ function FlashcardsAndPodsContent() {
                   className="flex-1 py-2.5 px-4 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 text-slate-800 dark:text-slate-200 font-extrabold text-xs flex items-center justify-center gap-1.5"
                 >
                   <Layers className="w-4 h-4 text-indigo-600" />
-                  <span>Drill Topic Flashcards</span>
+                  <span>Flashcards</span>
                 </button>
                 <Link
                   href={`/practice?topicId=${selectedTopicId}`}
                   onClick={() => stopPodAudio()}
                   className="flex-1 py-2.5 px-4 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold text-xs flex items-center justify-center gap-1.5 shadow-sm"
                 >
-                  <span>Test My Mastery Now</span>
+                  <span>Practice Questions</span>
                   <ArrowRight className="w-4 h-4" />
                 </Link>
               </div>
@@ -1222,7 +1270,7 @@ export default function FlashcardsAndPodsPage() {
     <Suspense
       fallback={
         <div className="p-12 text-center text-slate-500 font-bold">
-          Loading GCSE Flashcards & Audio-Visual Study Pods...
+          Loading Flashcards & Audio Lessons...
         </div>
       }
     >

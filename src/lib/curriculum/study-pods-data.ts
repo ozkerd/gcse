@@ -19,7 +19,7 @@ export interface TopicFlashcard {
 }
 
 export interface PodDialogueLine {
-  speaker: 'Alex (Coach)' | 'Maya (Student)';
+  speaker: 'Dan' | 'Mia';
   text: string;
 }
 
@@ -324,144 +324,191 @@ export function getTopicStudyPod(topicId: string): TopicStudyPod {
     SUBJECT_CRUCIAL_HACKS[topic.subjectId] || SUBJECT_CRUCIAL_HACKS.maths;
   const seedQuestions = INITIAL_SEED_QUESTIONS.filter((q) => q.topicId === topic.id);
 
-  // Pick a representative worked question (preferably Grade 6-8)
+  // Collect distinct subtopic questions so every topic's lesson covers its actual subtopics directly
+  const distinctSubQs: typeof seedQuestions = [];
+  const seenSubs = new Set<string>();
+  for (const q of seedQuestions) {
+    const key = q.subtopicId || q.id;
+    if (!seenSubs.has(key)) {
+      seenSubs.add(key);
+      distinctSubQs.push(q);
+    }
+    if (distinctSubQs.length >= 6) break;
+  }
+
+  const q1 = distinctSubQs[0] || seedQuestions[0];
+  const q2 = distinctSubQs[1] || seedQuestions[1] || q1;
+  const q3 = distinctSubQs[2] || seedQuestions[2] || q1;
   const sampleQ =
-    seedQuestions.find((q) => q.gradeLevel >= 6 && q.gradeLevel <= 8) ||
-    seedQuestions[0];
+    distinctSubQs.find((q) => q.gradeLevel >= 6 && q.gradeLevel <= 8) ||
+    distinctSubQs[3] ||
+    q1;
 
   const goldenFormulae =
     topic.keyFormulae && topic.keyFormulae.length > 0
       ? topic.keyFormulae
       : subjectHack.defaultFormulae;
 
-  const topConcept =
-    sampleQ?.explanation?.keyConcept ||
-    `${topic.topicName} connects core ${subject.name} principles to real GCSE exam scenarios.`;
-  const topTrap =
-    sampleQ?.explanation?.commonMistakes?.[0] ||
-    'Rushing into the final answer without writing the governing formula or unit conversion first.';
-  const topExamTip =
+  const concept1 =
+    q1?.explanation?.keyConcept || `${topic.topicName}: ${topic.description}`;
+  const concept2 =
+    q2?.explanation?.keyConcept ||
+    q1?.explanation?.overview ||
+    subjectHack.solverRule;
+  const concept3 =
+    q3?.explanation?.keyConcept ||
+    q2?.explanation?.overview ||
+    subjectHack.threePillars[0];
+
+  const method1 =
+    q1?.explanation?.overview || subjectHack.threePillars[0];
+  const method2 =
+    q2?.explanation?.overview || subjectHack.threePillars[1];
+  const method3 =
+    q3?.explanation?.overview || subjectHack.threePillars[2];
+
+  const topTrap1 =
+    q1?.explanation?.commonMistakes?.[0] ||
+    'Skipping the formula or unit conversion step before calculating.';
+  const topTrap2 =
+    q2?.explanation?.commonMistakes?.[0] ||
+    q1?.explanation?.commonMistakes?.[1] ||
+    'Rounding intermediate values too early instead of only rounding the final answer.';
+  const topExamTip1 =
+    q1?.explanation?.examTip ||
+    'Write the governing equation and substitute known numbers clearly to secure method marks.';
+  const topExamTip2 =
+    q2?.explanation?.examTip ||
     sampleQ?.explanation?.examTip ||
-    'Always show your substitution step clearly—it secures method marks even if your arithmetic slips.';
+    'Check your final units and significant figures against the question stem.';
+
+  const workedSteps =
+    sampleQ?.explanation?.stepByStep && sampleQ.explanation.stepByStep.length > 0
+      ? sampleQ.explanation.stepByStep
+      : [
+          'Identify the given quantities and units in the question.',
+          'Substitute the known values into the core formula.',
+          `Solve to obtain ${sampleQ?.correctAnswer || 'the final result'}.`,
+        ];
 
   const slides: PodVisualSlide[] = [
     {
       id: `${topic.id}-slide-1`,
       slideNumber: 1,
-      badge: '1. THE CRUCIAL CORE & EXAM SECRET',
-      title: `${topic.topicName}: Why It’s Easy Marks Once It Clicks`,
+      badge: 'Slide 1 • Core Rules',
+      title: `${topic.topicName}: Core Principles`,
       visualType: 'formula_spotlight',
       headlineFormula: goldenFormulae[0],
       keyTakeaways: [
-        `Core Scope: ${topic.description}`,
-        `Target Band: Tested heavily across Grades ${topic.minGrade} to ${topic.maxGrade} (${topic.tier} Tier).`,
-        `The Secret: ${subjectHack.solverRule}`,
+        concept1,
+        concept2,
+        concept3,
       ],
       dialogue: [
         {
-          speaker: 'Alex (Coach)',
-          text: `Welcome back! Today we are breaking down ${topic.topicName} in ${subject.name}. Honestly, students overcomplicate this topic all the time, but once you know the core trick, it is guaranteed marks.`,
+          speaker: 'Dan',
+          text: `${topic.topicName}: ${topic.description} First core principle—${concept1}`,
         },
         {
-          speaker: 'Maya (Student)',
-          text: `Okay, tell me the shortcut! When I open an exam paper and see a question on ${topic.topicName}, what is the very first thing that should pop into my head?`,
+          speaker: 'Mia',
+          text: `${q2?.subtopicName ? `In ${q2.subtopicName}: ` : ''}${concept2}`,
         },
         {
-          speaker: 'Alex (Coach)',
-          text: `Focus straight on the core relationship: ${topConcept} Every tough-looking scenario is just a disguise. Look for the values they give you, match them to our golden rule, and the problem practically solves itself.`,
+          speaker: 'Dan',
+          text: `${q3?.subtopicName ? `For ${q3.subtopicName}: ` : ''}${concept3}`,
         },
       ],
     },
     {
       id: `${topic.id}-slide-2`,
       slideNumber: 2,
-      badge: '2. THE 3-PIECE SOLVER KIT',
-      title: 'Know These 3 Rules, Solve 90% of Questions',
+      badge: 'Slide 2 • Key Methods',
+      title: `${topic.topicName}: Subtopic Methods`,
       visualType: 'three_pillars',
       headlineFormula: goldenFormulae.slice(0, 2).join('   |   '),
       keyTakeaways: [
-        `Rule 1: ${subjectHack.threePillars[0]}`,
-        `Rule 2: ${subjectHack.threePillars[1]}`,
-        `Rule 3: ${subjectHack.threePillars[2]}`,
+        `${q1?.subtopicName || 'Method 1'}: ${method1}`,
+        `${q2?.subtopicName || 'Method 2'}: ${method2}`,
+        `${q3?.subtopicName || 'Method 3'}: ${method3}`,
       ],
       dialogue: [
         {
-          speaker: 'Maya (Student)',
-          text: `So I don't need to memorise twenty different variations? Just these three building blocks?`,
+          speaker: 'Dan',
+          text: `${q1?.subtopicName ? `${q1.subtopicName}: ` : ''}${method1}`,
         },
         {
-          speaker: 'Alex (Coach)',
-          text: `Exactly! Think of it like a three-piece puzzle. First: ${subjectHack.threePillars[0]} Second: ${subjectHack.threePillars[1]} And third: ${subjectHack.threePillars[2]}`,
+          speaker: 'Mia',
+          text: `${q2?.subtopicName ? `${q2.subtopicName}: ` : ''}${method2}`,
         },
         {
-          speaker: 'Maya (Student)',
-          text: `That makes it way less overwhelming. If they give me two pieces of information in the question stem, I just plug them in to find the third!`,
+          speaker: 'Dan',
+          text: `${q3?.subtopicName ? `${q3.subtopicName}: ` : ''}${method3}`,
         },
       ],
     },
     {
       id: `${topic.id}-slide-3`,
       slideNumber: 3,
-      badge: '3. LIVE 60-SECOND EXAM HACK',
-      title: `Worked Exam Scenario: ${sampleQ?.subtopicName || topic.topicName}`,
+      badge: 'Slide 3 • Worked Example',
+      title: `Worked Example: ${sampleQ?.subtopicName || topic.topicName}`,
       visualType: 'worked_hack',
       headlineFormula: sampleQ
-        ? `Target Answer: ${sampleQ.correctAnswer}`
+        ? `Answer: ${sampleQ.correctAnswer}`
         : goldenFormulae[0],
-      keyTakeaways: sampleQ?.explanation?.stepByStep?.slice(0, 3) || [
-        'Step 1: Highlight the given quantities and units in the question stem.',
-        'Step 2: Write down the governing formula/rule to bank your first method mark.',
-        'Step 3: Substitute and simplify cleanly to reach the final answer.',
-      ],
+      keyTakeaways: workedSteps.slice(0, 3),
       dialogue: [
         {
-          speaker: 'Alex (Coach)',
-          text: `Let's test this on a real GCSE-style question right now: "${
-            sampleQ?.questionText || `Calculate or explain the outcome for ${topic.topicName}.`
-          }"`,
+          speaker: 'Mia',
+          text: `Exam question: ${
+            sampleQ?.questionText || `Calculate the result for ${topic.topicName}.`
+          }`,
         },
         {
-          speaker: 'Maya (Student)',
-          text: `Hold on—let me apply our 3-step hack. First, I spot what the question gives us and write down the method.`,
+          speaker: 'Dan',
+          text: `${workedSteps.slice(0, 2).join(' ')}`,
         },
         {
-          speaker: 'Alex (Coach)',
-          text: `Spot on! Follow the steps on screen: ${
-            sampleQ?.explanation?.stepByStep?.slice(0, 2).join(' Then, ') ||
-            sampleQ?.explanation?.overview ||
-            'Substitute the knowns and solve step by step.'
-          } That lands us directly on ${sampleQ?.correctAnswer || 'full marks'}!`,
+          speaker: 'Mia',
+          text: `${
+            workedSteps.length > 2
+              ? workedSteps.slice(2).join(' ')
+              : sampleQ?.explanation?.overview || ''
+          } Final answer: ${sampleQ?.correctAnswer || ''}.`,
         },
       ],
     },
     {
       id: `${topic.id}-slide-4`,
       slideNumber: 4,
-      badge: '4. EXAMINER TRAP VS GRADE 9 BOOSTER',
-      title: 'How to Never Drop Silly Marks Again',
+      badge: 'Slide 4 • Mistakes & Tips',
+      title: `${topic.topicName}: Mistakes to Avoid & Exam Tips`,
       visualType: 'trap_vs_top',
-      headlineFormula: `Examiner Tip: ${topExamTip}`,
+      headlineFormula: topExamTip1,
       keyTakeaways: [
-        `The #1 Trap: ${topTrap}`,
-        `Grade 9 Habit: ${topExamTip}`,
-        `Key Vocabulary: ${(topic.keywords || [topic.topicName, topic.unitName]).join(', ')}`,
+        `Avoid: ${topTrap1}`,
+        `Avoid: ${topTrap2}`,
+        `Exam Tip: ${topExamTip1}`,
       ],
       comparison: {
-        commonTrap: topTrap,
-        grade9Fix: topExamTip,
+        commonTrap: `${topTrap1} ${topTrap2 !== topTrap1 ? topTrap2 : ''}`,
+        grade9Fix: `${topExamTip1} ${topExamTip2 !== topExamTip1 ? topExamTip2 : ''}`,
       },
       dialogue: [
         {
-          speaker: 'Maya (Student)',
-          text: `Before we jump into the flashcards and custom questions, what is the biggest trap students fall into on exam day for ${topic.topicName}?`,
+          speaker: 'Dan',
+          text: `Mistake to avoid in ${q1?.subtopicName || topic.topicName}: ${topTrap1}`,
         },
         {
-          speaker: 'Alex (Coach)',
-          text: `Examiners report the same mistake every year: ${topTrap} Don't let that be you!`,
+          speaker: 'Mia',
+          text: `${
+            topTrap2 !== topTrap1
+              ? `Second mistake to watch for: ${topTrap2} `
+              : ''
+          }Key exam tip: ${topExamTip1}`,
         },
         {
-          speaker: 'Maya (Student)',
-          text: `Got it! Instead, I'll remember our Grade 9 booster: ${topExamTip} Let's test my level with the flashcards and adaptive questions now!`,
+          speaker: 'Dan',
+          text: `${topExamTip2 !== topExamTip1 ? topExamTip2 : `Use key terms: ${(topic.keywords || [topic.topicName]).join(', ')}.`}`,
         },
       ],
     },
@@ -472,10 +519,10 @@ export function getTopicStudyPod(topicId: string): TopicStudyPod {
     topicName: topic.topicName,
     subjectId: topic.subjectId,
     subjectName: subject.name,
-    durationEstimate: '2 min Audio & Visual Pod',
+    durationEstimate: '2 min Audio Lesson',
     crucialSummary: subjectHack.solverRule,
     goldenFormulae,
-    threeThingsToKnow: subjectHack.threePillars,
+    threeThingsToKnow: [concept1, concept2, concept3],
     slides,
   };
 }

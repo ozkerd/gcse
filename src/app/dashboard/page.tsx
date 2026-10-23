@@ -324,9 +324,9 @@ export default function Dashboard() {
               </span>
               <Headphones className="w-5 h-5 text-pink-200 group-hover:scale-110 transition-transform" />
             </div>
-            <h3 className="text-lg font-black">2-Min Audio-Visual Exam Pods</h3>
+            <h3 className="text-lg font-black">2-Min Audio-Visual Lessons</h3>
             <p className="text-xs text-pink-100 leading-relaxed">
-              Listen to Alex & Maya explain the crucial 3 rules & formulas that solve 90% of GCSE exam problems.
+              Listen to Dan & Mia explain the key formulas, methods, and worked examples for each topic.
             </p>
           </div>
           <div className="mt-4 pt-3 border-t border-white/15 flex items-center justify-between text-xs font-extrabold">
