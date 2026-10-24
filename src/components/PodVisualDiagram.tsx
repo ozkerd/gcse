@@ -173,9 +173,9 @@ export const PodVisualDiagram: React.FC<PodVisualDiagramProps> = ({
           <AlertTriangle className="w-4 h-4 text-rose-400 shrink-0" />
           <span>Mistake to Avoid</span>
         </div>
-        <p className="text-xs sm:text-sm text-rose-100 leading-relaxed font-medium">
-          {comparison?.commonTrap || keyTakeaways[0]}
-        </p>
+        <div className="text-xs sm:text-sm text-rose-100 leading-relaxed font-medium">
+          <FormattedText text={comparison?.commonTrap || keyTakeaways[0]} />
+        </div>
       </div>
 
       <div className="p-4 rounded-2xl bg-emerald-950/70 border border-emerald-500/40 space-y-2">
@@ -183,9 +183,9 @@ export const PodVisualDiagram: React.FC<PodVisualDiagramProps> = ({
           <Sparkles className="w-4 h-4 text-emerald-400 shrink-0" />
           <span>Top Grade Exam Tip</span>
         </div>
-        <p className="text-xs sm:text-sm text-emerald-100 leading-relaxed font-medium">
-          {comparison?.grade9Fix || keyTakeaways[1]}
-        </p>
+        <div className="text-xs sm:text-sm text-emerald-100 leading-relaxed font-medium">
+          <FormattedText text={comparison?.grade9Fix || keyTakeaways[1]} />
+        </div>
       </div>
     </div>
   );

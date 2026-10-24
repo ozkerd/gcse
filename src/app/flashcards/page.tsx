@@ -35,125 +35,7 @@ import {
 import { FormattedText } from '@/components/FormattedText';
 import { LevelCheckInModal } from '@/components/LevelCheckInModal';
 import { PodVisualDiagram } from '@/components/PodVisualDiagram';
-
-const MALE_VOICE_KEYWORDS = [
-  'google uk english male',
-  'daniel',
-  'oliver',
-  'arthur',
-  'ryan',
-  'george',
-  'thomas',
-  'james',
-  'david',
-  'mark',
-  'aaron',
-  'reed',
-  'alex',
-  'rishi',
-  'tom',
-  'gordon',
-  'lee',
-  'fred',
-];
-
-const FEMALE_VOICE_KEYWORDS = [
-  'google uk english female',
-  'serena',
-  'kate',
-  'martha',
-  'sonia',
-  'libby',
-  'hazel',
-  'samantha',
-  'victoria',
-  'karen',
-  'moira',
-  'tessa',
-  'fiona',
-  'ava',
-  'allison',
-  'susan',
-  'zoe',
-];
-
-function isExplicitMaleVoice(nameLower: string): boolean {
-  if (nameLower.includes('female')) return false;
-  if (/\bmale\b/.test(nameLower)) return true;
-  return MALE_VOICE_KEYWORDS.some((kw) => nameLower.includes(kw));
-}
-
-function isExplicitFemaleVoice(nameLower: string): boolean {
-  if (nameLower.includes('female')) return true;
-  return FEMALE_VOICE_KEYWORDS.some((kw) => nameLower.includes(kw));
-}
-
-/**
- * Picks two guaranteed distinct voices:
- * - Dan: Male UK/English voice
- * - Mia: Female UK/English voice
- */
-function selectDanAndMiaVoices(voices: SpeechSynthesisVoice[]): {
-  danVoice: SpeechSynthesisVoice | null;
-  miaVoice: SpeechSynthesisVoice | null;
-  sameUnderlyingVoice: boolean;
-} {
-  if (!voices || voices.length === 0) {
-    return { danVoice: null, miaVoice: null, sameUnderlyingVoice: true };
-  }
-
-  const enVoices = voices.filter((v) =>
-    v.lang.toLowerCase().replace('_', '-').startsWith('en')
-  );
-  const pool = enVoices.length > 0 ? enVoices : voices;
-
-  const qualityScore = (v: SpeechSynthesisVoice): number => {
-    const n = v.name.toLowerCase();
-    const l = v.lang.toLowerCase();
-    let s = 0;
-    if (l.includes('gb') || l.includes('uk')) s += 35;
-    if (n.includes('natural') || n.includes('neural') || n.includes('online')) s += 50;
-    if (n.includes('google uk english')) s += 45;
-    if (n.includes('premium') || n.includes('enhanced')) s += 30;
-    if (n.includes('compact') || n.includes('zarvox') || n.includes('bells')) s -= 80;
-    return s;
-  };
-
-  const maleCandidates = pool
-    .filter((v) => isExplicitMaleVoice(v.name.toLowerCase()))
-    .sort((a, b) => qualityScore(b) - qualityScore(a));
-
-  const femaleCandidates = pool
-    .filter((v) => isExplicitFemaleVoice(v.name.toLowerCase()))
-    .sort((a, b) => qualityScore(b) - qualityScore(a));
-
-  const sortedAll = [...pool].sort((a, b) => qualityScore(b) - qualityScore(a));
-
-  const danVoice = maleCandidates[0] || sortedAll[0] || null;
-  const miaVoice =
-    femaleCandidates.find((v) => v.name !== danVoice?.name) ||
-    sortedAll.find((v) => v.name !== danVoice?.name) ||
-    danVoice;
-
-  const sameUnderlyingVoice =
-    !danVoice || !miaVoice || danVoice.name === miaVoice.name;
-
-  return { danVoice, miaVoice, sameUnderlyingVoice };
-}
-
-function cleanTextForSpeech(raw: string): string {
-  return raw
-    .replace(/\$\$/g, '')
-    .replace(/\$/g, '')
-    .replace(/\\frac\{([^}]+)\}\{([^}]+)\}/g, '$1 divided by $2')
-    .replace(/\\times/g, ' times ')
-    .replace(/\\div/g, ' divided by ')
-    .replace(/\\Delta/g, ' change in ')
-    .replace(/\\lambda/g, ' wavelength ')
-    .replace(/\\rightarrow/g, ' leads to ')
-    .replace(/\s+/g, ' ')
-    .trim();
-}
+import { formatSpokenMathText } from '@/lib/math-format';
 
 const SPEED_OPTIONS = [1, 1.25, 1.5, 1.75, 2];
 
@@ -205,11 +87,6 @@ function FlashcardsAndPodsContent() {
   useEffect(() => {
     setFlashcardProgressMap(UserStore.getFlashcardProgressMap());
     setCoverageMap(UserStore.getTopicCoverageMap());
-
-    // Pre-warm browser voices list
-    if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
-      window.speechSynthesis.getVoices();
-    }
 
     if (initialTopicParam) {
       const found = GCSE_TOPICS.find((t) => t.id === initialTopicParam);
@@ -399,93 +276,20 @@ function FlashcardsAndPodsContent() {
       audioRef.current.pause();
       audioRef.current = null;
     }
-
-    if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
-      window.speechSynthesis.cancel();
-    }
   };
 
   /**
-   * Offline fallback only if network neural audio cannot be reached.
-   */
-  const speakWithBrowserFallback = (
-    slideIdx: number,
-    lineIdx: number,
-    line: { speaker: string; text: string },
-    currentSessionId: number,
-    startCharOffset = 0
-  ) => {
-    if (typeof window === 'undefined' || !('speechSynthesis' in window)) return;
-    window.speechSynthesis.cancel();
-
-    const fullText = cleanTextForSpeech(line.text);
-    const remainingText =
-      startCharOffset > 0 && startCharOffset < fullText.length
-        ? fullText.slice(startCharOffset)
-        : fullText;
-    const baseOffset =
-      startCharOffset > 0 && startCharOffset < fullText.length
-        ? startCharOffset
-        : 0;
-
-    const isDanMale = line.speaker === 'Dan';
-    const currentSpeed = playbackRateRef.current;
-
-    const utterance = new SpeechSynthesisUtterance(remainingText);
-    utterance.lang = 'en-GB';
-    utterance.rate = currentSpeed;
-
-    const voices = window.speechSynthesis.getVoices();
-    const { danVoice, miaVoice, sameUnderlyingVoice } =
-      selectDanAndMiaVoices(voices);
-
-    if (isDanMale) {
-      if (danVoice) utterance.voice = danVoice;
-      utterance.pitch = sameUnderlyingVoice ? 0.85 : 0.96;
-    } else {
-      if (miaVoice) utterance.voice = miaVoice;
-      utterance.pitch = sameUnderlyingVoice ? 1.15 : 1.04;
-    }
-
-    utterance.onboundary = (event) => {
-      if (utteranceSessionIdRef.current !== currentSessionId) return;
-      if (typeof event.charIndex === 'number') {
-        const nextProgress = Math.min(
-          line.text.length,
-          baseOffset + event.charIndex
-        );
-        spokenCharProgressRef.current = nextProgress;
-        setSpokenCharProgress(nextProgress);
-      }
-    };
-
-    utterance.onend = () => {
-      if (utteranceSessionIdRef.current !== currentSessionId) return;
-      clearProgressTimer();
-      setSpokenCharProgress(line.text.length);
-      spokenCharProgressRef.current = line.text.length;
-      if (!speechActiveRef.current) return;
-      speakDialogueLine(slideIdx, lineIdx + 1, 0);
-    };
-
-    utterance.onerror = () => {
-      if (utteranceSessionIdRef.current !== currentSessionId) return;
-      clearProgressTimer();
-    };
-
-    window.speechSynthesis.speak(utterance);
-  };
-
-  /**
-   * Speaks a dialogue line using real UK Neural Human Voices (/api/tts):
+   * Speaks a dialogue line using strictly 2 real UK Neural Human Voices (/api/tts):
    * - Dan: British Male Neural Voice (Amazon Polly Brian)
    * - Mia: British Female Neural Voice (Amazon Polly Amy)
    * - Instant live speed control (1x - 2x) locked onto HTMLAudioElement.playbackRate
+   * - Zero robotic OS voices
    */
   const speakDialogueLine = (
     slideIdx: number,
     lineIdx: number,
-    startCharOffset = 0
+    startCharOffset = 0,
+    retryCount = 0
   ) => {
     if (typeof window === 'undefined') return;
 
@@ -525,13 +329,10 @@ function FlashcardsAndPodsContent() {
       audioRef.current.pause();
       audioRef.current = null;
     }
-    if ('speechSynthesis' in window) {
-      window.speechSynthesis.cancel();
-    }
 
     if (isMutedRef.current) return;
 
-    const fullText = cleanTextForSpeech(line.text);
+    const fullText = formatSpokenMathText(line.text);
     const ttsUrl = `/api/tts?speaker=${encodeURIComponent(
       line.speaker
     )}&text=${encodeURIComponent(fullText)}`;
@@ -573,29 +374,23 @@ function FlashcardsAndPodsContent() {
       speakDialogueLine(slideIdx, lineIdx + 1, 0);
     };
 
-    audio.onerror = () => {
+    const handleTransientError = () => {
       if (utteranceSessionIdRef.current !== currentSessionId) return;
       audioRef.current = null;
-      speakWithBrowserFallback(
-        slideIdx,
-        lineIdx,
-        line,
-        currentSessionId,
-        startCharOffset
-      );
+      if (retryCount < 2 && speechActiveRef.current) {
+        setTimeout(() => {
+          if (utteranceSessionIdRef.current === currentSessionId && speechActiveRef.current) {
+            speakDialogueLine(slideIdx, lineIdx, startCharOffset, retryCount + 1);
+          }
+        }, 350);
+      } else {
+        stopPodAudio();
+      }
     };
 
-    audio.play().catch(() => {
-      if (utteranceSessionIdRef.current !== currentSessionId) return;
-      audioRef.current = null;
-      speakWithBrowserFallback(
-        slideIdx,
-        lineIdx,
-        line,
-        currentSessionId,
-        startCharOffset
-      );
-    });
+    audio.onerror = handleTransientError;
+
+    audio.play().catch(handleTransientError);
   };
 
   const togglePlayPod = () => {
@@ -618,24 +413,6 @@ function FlashcardsAndPodsContent() {
 
     if (audioRef.current) {
       audioRef.current.playbackRate = newRate;
-      return;
-    }
-
-    if (isPlayingAudio && speechActiveRef.current) {
-      const slide = currentPod.slides[activeSlideIdxRef.current];
-      const line = slide?.dialogue[activeDialogueIdxRef.current];
-      let resumeOffset = spokenCharProgressRef.current;
-      if (line && resumeOffset > 0 && resumeOffset < line.text.length - 5) {
-        const prevSpace = line.text.lastIndexOf(' ', resumeOffset);
-        resumeOffset = prevSpace > 0 ? prevSpace + 1 : 0;
-      } else {
-        resumeOffset = 0;
-      }
-      speakDialogueLine(
-        activeSlideIdxRef.current,
-        activeDialogueIdxRef.current,
-        resumeOffset
-      );
     }
   };
 

@@ -2,6 +2,7 @@
 
 import React from 'react';
 import { KaTeXRenderer } from './KaTeXRenderer';
+import { formatVisualMathText } from '@/lib/math-format';
 
 interface FormattedTextProps {
   text: string;
@@ -13,7 +14,6 @@ export const FormattedText: React.FC<FormattedTextProps> = ({
   className = '',
 }) => {
   if (!text) return null;
-  // Normalize $$...$$ into $...$ for KaTeXRenderer compatibility
-  const normalized = text.replace(/\$\$([^$]+)\$\$/g, '$$$1$$');
+  const normalized = formatVisualMathText(text);
   return <KaTeXRenderer content={normalized} className={className} />;
 };

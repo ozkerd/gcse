@@ -1,26 +1,48 @@
 import { NextResponse } from 'next/server';
+import { formatSpokenMathText } from '@/lib/math-format';
 
 export const runtime = 'edge';
 
-function splitTextIntoChunks(text: string, maxLen = 180): string[] {
-  const words = text.split(/\s+/);
-  const chunks: string[] = [];
-  let current = '';
+async function fetchPollyVoiceMp3(
+  spokenText: string,
+  pollyVoice: 'Brian' | 'Amy'
+): Promise<ArrayBuffer | null> {
+  for (let attempt = 0; attempt < 3; attempt++) {
+    try {
+      const bodyParams = new URLSearchParams();
+      bodyParams.set('msg', spokenText);
+      bodyParams.set('lang', pollyVoice);
+      bodyParams.set('source', 'ttsmp3');
 
-  for (const word of words) {
-    if ((current + ' ' + word).trim().length <= maxLen) {
-      current = (current + ' ' + word).trim();
-    } else {
-      if (current) chunks.push(current);
-      current = word.slice(0, maxLen);
+      const metaRes = await fetch('https://ttsmp3.com/makemp3_new.php', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+          'User-Agent':
+            'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36',
+        },
+        body: bodyParams.toString(),
+      });
+
+      if (metaRes.ok) {
+        const data = (await metaRes.json()) as { URL?: string };
+        if (data && data.URL) {
+          const mp3Res = await fetch(data.URL);
+          if (mp3Res.ok) {
+            return await mp3Res.arrayBuffer();
+          }
+        }
+      }
+    } catch {
+      // Retry same voice on transient network error
     }
   }
-  if (current) chunks.push(current);
-  return chunks;
+  return null;
 }
 
 /**
  * Edge-compatible Natural British Human Voice TTS Endpoint
+ * Strictly 2 voices ONLY (no robotic voices, no extra accents):
  * - Dan (Male): Amazon Polly UK 'Brian'
  * - Mia (Female): Amazon Polly UK 'Amy'
  */
@@ -33,94 +55,21 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: 'Missing text parameter' }, { status: 400 });
   }
 
-  // Clean LaTeX notation so formulas are spoken naturally like a human tutor
-  const spokenText = rawText
-    .replace(/\$\$/g, '')
-    .replace(/\$/g, '')
-    .replace(/\\frac\{([^}]+)\}\{([^}]+)\}/g, '$1 divided by $2')
-    .replace(/\\times/g, ' times ')
-    .replace(/\\div/g, ' divided by ')
-    .replace(/\\Delta/g, ' change in ')
-    .replace(/\\lambda/g, ' wavelength ')
-    .replace(/\\rightarrow/g, ' leads to ')
-    .replace(/\s+/g, ' ')
-    .trim()
-    .slice(0, 900);
+  // Convert all mathematical and scientific notation into natural UK spoken English
+  const spokenText = formatSpokenMathText(rawText).slice(0, 950);
 
-  const isMale = speaker.includes('dan') || speaker.includes('alex');
-  const pollyVoice = isMale ? 'Brian' : 'Amy';
+  const isMale = speaker.includes('dan');
+  const pollyVoice: 'Brian' | 'Amy' = isMale ? 'Brian' : 'Amy';
 
-  // 1. Primary: Amazon Polly UK Natural Human Voices ('Brian' Male & 'Amy' Female) via ttsmp3
-  try {
-    const bodyParams = new URLSearchParams();
-    bodyParams.set('msg', spokenText);
-    bodyParams.set('lang', pollyVoice);
-    bodyParams.set('source', 'ttsmp3');
-
-    const metaRes = await fetch('https://ttsmp3.com/makemp3_new.php', {
-      method: 'POST',
+  const audioBuffer = await fetchPollyVoiceMp3(spokenText, pollyVoice);
+  if (audioBuffer && audioBuffer.byteLength > 0) {
+    return new Response(audioBuffer, {
+      status: 200,
       headers: {
-        'Content-Type': 'application/x-www-form-urlencoded',
-        'User-Agent':
-          'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36',
+        'Content-Type': 'audio/mpeg',
+        'Cache-Control': 'public, max-age=86400',
       },
-      body: bodyParams.toString(),
     });
-
-    if (metaRes.ok) {
-      const data = await metaRes.json();
-      if (data && data.URL) {
-        const mp3Res = await fetch(data.URL);
-        if (mp3Res.ok && mp3Res.body) {
-          return new Response(mp3Res.body, {
-            status: 200,
-            headers: {
-              'Content-Type': 'audio/mpeg',
-              'Cache-Control': 'public, max-age=86400',
-            },
-          });
-        }
-      }
-    }
-  } catch {
-    // Fall through to multi-chunk Google Neural TTS
-  }
-
-  // 2. Fallback: Multi-chunk Google Neural TTS (concatenates MP3 buffers for any length)
-  try {
-    const chunks = splitTextIntoChunks(spokenText, 175);
-    const tl = isMale ? 'en-AU' : 'en-GB';
-    const buffers: ArrayBuffer[] = [];
-
-    for (const chunk of chunks) {
-      const googleUrl = `https://translate.googleapis.com/translate_tts?ie=UTF-8&client=tw-ob&tl=${tl}&q=${encodeURIComponent(
-        chunk
-      )}`;
-      const res = await fetch(googleUrl);
-      if (res.ok) {
-        buffers.push(await res.arrayBuffer());
-      }
-    }
-
-    if (buffers.length > 0) {
-      const totalLen = buffers.reduce((acc, b) => acc + b.byteLength, 0);
-      const merged = new Uint8Array(totalLen);
-      let offset = 0;
-      for (const b of buffers) {
-        merged.set(new Uint8Array(b), offset);
-        offset += b.byteLength;
-      }
-
-      return new Response(merged, {
-        status: 200,
-        headers: {
-          'Content-Type': 'audio/mpeg',
-          'Cache-Control': 'public, max-age=86400',
-        },
-      });
-    }
-  } catch {
-    // Ignore
   }
 
   return NextResponse.json({ error: 'TTS stream unavailable' }, { status: 503 });

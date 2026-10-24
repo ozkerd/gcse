@@ -1,4 +1,5 @@
 import { GCSE_TOPICS, GCSE_SUBJECTS, INITIAL_SEED_QUESTIONS } from './gcse-data';
+import { formatReadableTranscriptText } from '@/lib/math-format';
 
 export type FlashcardCategory =
   | 'Formula & Rule'
@@ -760,15 +761,21 @@ export function getTopicStudyPod(topicId: string): TopicStudyPod {
       dialogue: [
         {
           speaker: 'Dan',
-          text: `${topic.topicName}: ${topic.description} First core principle—${concept1}`,
+          text: formatReadableTranscriptText(
+            `${topic.topicName}: ${topic.description} Primary rule: ${goldenFormulae[0]}.`
+          ),
         },
         {
           speaker: 'Mia',
-          text: `${q2?.subtopicName ? `In ${q2.subtopicName}: ` : ''}${concept2}`,
+          text: formatReadableTranscriptText(
+            `Second key relationship: ${goldenFormulae[1] || concept2}.`
+          ),
         },
         {
           speaker: 'Dan',
-          text: `${q3?.subtopicName ? `For ${q3.subtopicName}: ` : ''}${concept3}`,
+          text: formatReadableTranscriptText(
+            `Third core rule: ${goldenFormulae[2] || concept3}.`
+          ),
         },
       ],
     },
@@ -787,15 +794,21 @@ export function getTopicStudyPod(topicId: string): TopicStudyPod {
       dialogue: [
         {
           speaker: 'Dan',
-          text: `${q1?.subtopicName ? `${q1.subtopicName}: ` : ''}${method1}`,
+          text: formatReadableTranscriptText(
+            `${q1?.subtopicName ? `${q1.subtopicName}: ` : ''}${method1}`
+          ),
         },
         {
           speaker: 'Mia',
-          text: `${q2?.subtopicName ? `${q2.subtopicName}: ` : ''}${method2}`,
+          text: formatReadableTranscriptText(
+            `${q2?.subtopicName ? `${q2.subtopicName}: ` : ''}${method2}`
+          ),
         },
         {
           speaker: 'Dan',
-          text: `${q3?.subtopicName ? `${q3.subtopicName}: ` : ''}${method3}`,
+          text: formatReadableTranscriptText(
+            `${q3?.subtopicName ? `${q3.subtopicName}: ` : ''}${method3}`
+          ),
         },
       ],
     },
@@ -812,21 +825,27 @@ export function getTopicStudyPod(topicId: string): TopicStudyPod {
       dialogue: [
         {
           speaker: 'Mia',
-          text: `Exam question: ${
-            sampleQ?.questionText || `Calculate the result for ${topic.topicName}.`
-          }`,
+          text: formatReadableTranscriptText(
+            `Exam question: ${
+              sampleQ?.questionText || `Calculate the result for ${topic.topicName}.`
+            }`
+          ),
         },
         {
           speaker: 'Dan',
-          text: `${workedSteps.slice(0, 2).join(' ')}`,
+          text: formatReadableTranscriptText(
+            `${workedSteps.slice(0, 2).join(' ')}`
+          ),
         },
         {
           speaker: 'Mia',
-          text: `${
-            workedSteps.length > 2
-              ? workedSteps.slice(2).join(' ')
-              : sampleQ?.explanation?.overview || ''
-          } Final answer: ${sampleQ?.correctAnswer || ''}.`,
+          text: formatReadableTranscriptText(
+            `${
+              workedSteps.length > 2
+                ? workedSteps.slice(2).join(' ')
+                : sampleQ?.explanation?.overview || ''
+            } Final answer: ${sampleQ?.correctAnswer || ''}.`
+          ),
         },
       ],
     },
@@ -849,23 +868,29 @@ export function getTopicStudyPod(topicId: string): TopicStudyPod {
       dialogue: [
         {
           speaker: 'Dan',
-          text: `Mistake to avoid in ${q1?.subtopicName || topic.topicName}: ${topTrap1}`,
+          text: formatReadableTranscriptText(
+            `Mistake to avoid in ${q1?.subtopicName || topic.topicName}: ${topTrap1}`
+          ),
         },
         {
           speaker: 'Mia',
-          text: `${
-            topTrap2 !== topTrap1
-              ? `Second mistake to watch for: ${topTrap2} `
-              : ''
-          }Key exam tip: ${topExamTip1}`,
+          text: formatReadableTranscriptText(
+            `${
+              topTrap2 !== topTrap1
+                ? `Second mistake to watch for: ${topTrap2} `
+                : ''
+            }Key exam tip: ${topExamTip1}`
+          ),
         },
         {
           speaker: 'Dan',
-          text: `${
-            topExamTip2 !== topExamTip1
-              ? topExamTip2
-              : `Key terms to include: ${(topic.keywords || [topic.topicName]).join(', ')}.`
-          }`,
+          text: formatReadableTranscriptText(
+            `${
+              topExamTip2 !== topExamTip1
+                ? topExamTip2
+                : `Key terms to include: ${(topic.keywords || [topic.topicName]).join(', ')}.`
+            }`
+          ),
         },
       ],
     },
