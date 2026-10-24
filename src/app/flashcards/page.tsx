@@ -190,6 +190,7 @@ function FlashcardsAndPodsContent() {
   const [spokenCharProgress, setSpokenCharProgress] = useState<number>(0);
 
   // Refs to ensure instant speed changes and zero stale closures
+  const audioRef = useRef<HTMLAudioElement | null>(null);
   const speechActiveRef = useRef<boolean>(false);
   const playbackRateRef = useRef<number>(1.25);
   const isMutedRef = useRef<boolean>(false);
@@ -391,22 +392,102 @@ function FlashcardsAndPodsContent() {
     spokenCharProgressRef.current = 0;
     clearProgressTimer();
 
+    if (audioRef.current) {
+      audioRef.current.onended = null;
+      audioRef.current.onerror = null;
+      audioRef.current.ontimeupdate = null;
+      audioRef.current.pause();
+      audioRef.current = null;
+    }
+
     if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
       window.speechSynthesis.cancel();
     }
   };
 
   /**
-   * Speaks a dialogue line with:
-   * - Guaranteed distinct Male voice for Dan & Female voice for Mia
-   * - Live speed support (startCharOffset allows instant mid-sentence speed changes!)
+   * Offline fallback only if network neural audio cannot be reached.
+   */
+  const speakWithBrowserFallback = (
+    slideIdx: number,
+    lineIdx: number,
+    line: { speaker: string; text: string },
+    currentSessionId: number,
+    startCharOffset = 0
+  ) => {
+    if (typeof window === 'undefined' || !('speechSynthesis' in window)) return;
+    window.speechSynthesis.cancel();
+
+    const fullText = cleanTextForSpeech(line.text);
+    const remainingText =
+      startCharOffset > 0 && startCharOffset < fullText.length
+        ? fullText.slice(startCharOffset)
+        : fullText;
+    const baseOffset =
+      startCharOffset > 0 && startCharOffset < fullText.length
+        ? startCharOffset
+        : 0;
+
+    const isDanMale = line.speaker === 'Dan';
+    const currentSpeed = playbackRateRef.current;
+
+    const utterance = new SpeechSynthesisUtterance(remainingText);
+    utterance.lang = 'en-GB';
+    utterance.rate = currentSpeed;
+
+    const voices = window.speechSynthesis.getVoices();
+    const { danVoice, miaVoice, sameUnderlyingVoice } =
+      selectDanAndMiaVoices(voices);
+
+    if (isDanMale) {
+      if (danVoice) utterance.voice = danVoice;
+      utterance.pitch = sameUnderlyingVoice ? 0.85 : 0.96;
+    } else {
+      if (miaVoice) utterance.voice = miaVoice;
+      utterance.pitch = sameUnderlyingVoice ? 1.15 : 1.04;
+    }
+
+    utterance.onboundary = (event) => {
+      if (utteranceSessionIdRef.current !== currentSessionId) return;
+      if (typeof event.charIndex === 'number') {
+        const nextProgress = Math.min(
+          line.text.length,
+          baseOffset + event.charIndex
+        );
+        spokenCharProgressRef.current = nextProgress;
+        setSpokenCharProgress(nextProgress);
+      }
+    };
+
+    utterance.onend = () => {
+      if (utteranceSessionIdRef.current !== currentSessionId) return;
+      clearProgressTimer();
+      setSpokenCharProgress(line.text.length);
+      spokenCharProgressRef.current = line.text.length;
+      if (!speechActiveRef.current) return;
+      speakDialogueLine(slideIdx, lineIdx + 1, 0);
+    };
+
+    utterance.onerror = () => {
+      if (utteranceSessionIdRef.current !== currentSessionId) return;
+      clearProgressTimer();
+    };
+
+    window.speechSynthesis.speak(utterance);
+  };
+
+  /**
+   * Speaks a dialogue line using real UK Neural Human Voices (/api/tts):
+   * - Dan: British Male Neural Voice (Amazon Polly Brian)
+   * - Mia: British Female Neural Voice (Amazon Polly Amy)
+   * - Instant live speed control (1x - 2x) locked onto HTMLAudioElement.playbackRate
    */
   const speakDialogueLine = (
     slideIdx: number,
     lineIdx: number,
     startCharOffset = 0
   ) => {
-    if (typeof window === 'undefined' || !('speechSynthesis' in window)) return;
+    if (typeof window === 'undefined') return;
 
     const slide = currentPod.slides[slideIdx];
     if (!slide) {
@@ -436,74 +517,54 @@ function FlashcardsAndPodsContent() {
     clearProgressTimer();
 
     const currentSessionId = ++utteranceSessionIdRef.current;
-    window.speechSynthesis.cancel();
+
+    if (audioRef.current) {
+      audioRef.current.onended = null;
+      audioRef.current.onerror = null;
+      audioRef.current.ontimeupdate = null;
+      audioRef.current.pause();
+      audioRef.current = null;
+    }
+    if ('speechSynthesis' in window) {
+      window.speechSynthesis.cancel();
+    }
 
     if (isMutedRef.current) return;
 
     const fullText = cleanTextForSpeech(line.text);
-    const remainingText =
-      startCharOffset > 0 && startCharOffset < fullText.length
-        ? fullText.slice(startCharOffset)
-        : fullText;
-    const baseOffset =
-      startCharOffset > 0 && startCharOffset < fullText.length
-        ? startCharOffset
-        : 0;
+    const ttsUrl = `/api/tts?speaker=${encodeURIComponent(
+      line.speaker
+    )}&text=${encodeURIComponent(fullText)}`;
 
-    const isDanMale = line.speaker === 'Dan';
-    const currentSpeed = playbackRateRef.current;
+    const audio = new Audio(ttsUrl);
+    audioRef.current = audio;
 
-    const utterance = new SpeechSynthesisUtterance(remainingText);
-    utterance.lang = 'en-GB';
-    utterance.rate = currentSpeed;
-
-    const voices = window.speechSynthesis.getVoices();
-    const { danVoice, miaVoice, sameUnderlyingVoice } =
-      selectDanAndMiaVoices(voices);
-
-    if (isDanMale) {
-      if (danVoice) utterance.voice = danVoice;
-      // Distinct male vs female pitch separation
-      utterance.pitch = sameUnderlyingVoice ? 0.82 : 0.94;
-    } else {
-      if (miaVoice) utterance.voice = miaVoice;
-      utterance.pitch = sameUnderlyingVoice ? 1.18 : 1.06;
-    }
-
-    utterance.onboundary = (event) => {
-      if (utteranceSessionIdRef.current !== currentSessionId) return;
-      if (typeof event.charIndex === 'number') {
-        const nextProgress = Math.min(
-          line.text.length,
-          baseOffset + event.charIndex
-        );
-        spokenCharProgressRef.current = nextProgress;
-        setSpokenCharProgress(nextProgress);
+    const applyLockedSpeed = () => {
+      audio.playbackRate = playbackRateRef.current;
+      if ('preservesPitch' in audio) {
+        (audio as HTMLAudioElement & { preservesPitch?: boolean }).preservesPitch =
+          true;
       }
     };
 
-    // Smooth timer for word highlighting across all browsers
-    const charsPerSecond = 14.5 * currentSpeed;
-    const estDurationMs = Math.max(
-      800,
-      (remainingText.length / charsPerSecond) * 1000
-    );
-    const startTime = Date.now();
-    progressTimerRef.current = setInterval(() => {
+    applyLockedSpeed();
+    audio.onloadedmetadata = applyLockedSpeed;
+    audio.onplay = applyLockedSpeed;
+
+    audio.ontimeupdate = () => {
       if (utteranceSessionIdRef.current !== currentSessionId) return;
-      const elapsed = Date.now() - startTime;
-      const pct = Math.min(1, elapsed / estDurationMs);
-      const nextChar = Math.min(
-        line.text.length,
-        baseOffset + Math.floor(pct * remainingText.length)
-      );
-      if (nextChar > spokenCharProgressRef.current) {
+      if (audio.duration && Number.isFinite(audio.duration) && audio.duration > 0) {
+        const pct = Math.min(1, audio.currentTime / audio.duration);
+        const nextChar = Math.min(
+          line.text.length,
+          Math.floor(pct * line.text.length)
+        );
         spokenCharProgressRef.current = nextChar;
         setSpokenCharProgress(nextChar);
       }
-    }, 60);
+    };
 
-    utterance.onend = () => {
+    audio.onended = () => {
       if (utteranceSessionIdRef.current !== currentSessionId) return;
       clearProgressTimer();
       setSpokenCharProgress(line.text.length);
@@ -512,12 +573,29 @@ function FlashcardsAndPodsContent() {
       speakDialogueLine(slideIdx, lineIdx + 1, 0);
     };
 
-    utterance.onerror = () => {
+    audio.onerror = () => {
       if (utteranceSessionIdRef.current !== currentSessionId) return;
-      clearProgressTimer();
+      audioRef.current = null;
+      speakWithBrowserFallback(
+        slideIdx,
+        lineIdx,
+        line,
+        currentSessionId,
+        startCharOffset
+      );
     };
 
-    window.speechSynthesis.speak(utterance);
+    audio.play().catch(() => {
+      if (utteranceSessionIdRef.current !== currentSessionId) return;
+      audioRef.current = null;
+      speakWithBrowserFallback(
+        slideIdx,
+        lineIdx,
+        line,
+        currentSessionId,
+        startCharOffset
+      );
+    });
   };
 
   const togglePlayPod = () => {
@@ -532,14 +610,18 @@ function FlashcardsAndPodsContent() {
 
   /**
    * Instant speed change: updates playbackRateRef and immediately applies
-   * the new speed to whichever speaker is currently talking!
+   * the new speed in real time to the active HTMLAudioElement stream!
    */
   const handleSpeedChange = (newRate: number) => {
     playbackRateRef.current = newRate;
     setPlaybackRate(newRate);
 
+    if (audioRef.current) {
+      audioRef.current.playbackRate = newRate;
+      return;
+    }
+
     if (isPlayingAudio && speechActiveRef.current) {
-      // Snap offset to previous space so it resumes cleanly from the current word
       const slide = currentPod.slides[activeSlideIdxRef.current];
       const line = slide?.dialogue[activeDialogueIdxRef.current];
       let resumeOffset = spokenCharProgressRef.current;

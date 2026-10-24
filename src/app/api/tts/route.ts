@@ -2,24 +2,39 @@ import { NextResponse } from 'next/server';
 
 export const runtime = 'edge';
 
+function splitTextIntoChunks(text: string, maxLen = 180): string[] {
+  const words = text.split(/\s+/);
+  const chunks: string[] = [];
+  let current = '';
+
+  for (const word of words) {
+    if ((current + ' ' + word).trim().length <= maxLen) {
+      current = (current + ' ' + word).trim();
+    } else {
+      if (current) chunks.push(current);
+      current = word.slice(0, maxLen);
+    }
+  }
+  if (current) chunks.push(current);
+  return chunks;
+}
+
 /**
  * Edge-compatible Natural British Human Voice TTS Endpoint
- * Uses natural UK voices:
- * - Alex (GCSE Coach): British Male ('Brian' neural voice)
- * - Maya (Year 11 Student): British Female ('Amy' neural voice)
- * With automatic fallback to Google UK English Neural stream.
+ * - Dan (Male): Amazon Polly UK 'Brian'
+ * - Mia (Female): Amazon Polly UK 'Amy'
  */
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
-  const text = (searchParams.get('text') || '').trim();
-  const speaker = searchParams.get('speaker') || 'Alex';
+  const rawText = (searchParams.get('text') || '').trim();
+  const speaker = (searchParams.get('speaker') || 'Dan').toLowerCase();
 
-  if (!text) {
+  if (!rawText) {
     return NextResponse.json({ error: 'Missing text parameter' }, { status: 400 });
   }
 
-  // Clean LaTeX symbols so the voice reads formulas naturally like a human teacher
-  const spokenText = text
+  // Clean LaTeX notation so formulas are spoken naturally like a human tutor
+  const spokenText = rawText
     .replace(/\$\$/g, '')
     .replace(/\$/g, '')
     .replace(/\\frac\{([^}]+)\}\{([^}]+)\}/g, '$1 divided by $2')
@@ -29,45 +44,74 @@ export async function GET(request: Request) {
     .replace(/\\lambda/g, ' wavelength ')
     .replace(/\\rightarrow/g, ' leads to ')
     .replace(/\s+/g, ' ')
-    .slice(0, 500);
+    .trim()
+    .slice(0, 900);
 
-  const voiceName = speaker.toLowerCase().includes('alex') ? 'Brian' : 'Amy';
+  const isMale = speaker.includes('dan') || speaker.includes('alex');
+  const pollyVoice = isMale ? 'Brian' : 'Amy';
 
-  // Primary: Amazon Polly UK Natural Human Voices (Brian & Amy) via StreamElements
+  // 1. Primary: Amazon Polly UK Natural Human Voices ('Brian' Male & 'Amy' Female) via ttsmp3
   try {
-    const pollyUrl = `https://api.streamelements.com/kappa/v2/speech?voice=${encodeURIComponent(
-      voiceName
-    )}&text=${encodeURIComponent(spokenText)}`;
+    const bodyParams = new URLSearchParams();
+    bodyParams.set('msg', spokenText);
+    bodyParams.set('lang', pollyVoice);
+    bodyParams.set('source', 'ttsmp3');
 
-    const res = await fetch(pollyUrl, {
+    const metaRes = await fetch('https://ttsmp3.com/makemp3_new.php', {
+      method: 'POST',
       headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
         'User-Agent':
-          'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
+          'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36',
       },
+      body: bodyParams.toString(),
     });
 
-    if (res.ok && res.body) {
-      return new Response(res.body, {
-        status: 200,
-        headers: {
-          'Content-Type': 'audio/mpeg',
-          'Cache-Control': 'public, max-age=86400',
-        },
-      });
+    if (metaRes.ok) {
+      const data = await metaRes.json();
+      if (data && data.URL) {
+        const mp3Res = await fetch(data.URL);
+        if (mp3Res.ok && mp3Res.body) {
+          return new Response(mp3Res.body, {
+            status: 200,
+            headers: {
+              'Content-Type': 'audio/mpeg',
+              'Cache-Control': 'public, max-age=86400',
+            },
+          });
+        }
+      }
     }
   } catch {
-    // Fall through to Google UK TTS
+    // Fall through to multi-chunk Google Neural TTS
   }
 
-  // Fallback: Google UK English TTS ( split into <200 char sentence chunks if needed )
+  // 2. Fallback: Multi-chunk Google Neural TTS (concatenates MP3 buffers for any length)
   try {
-    const shortChunk = spokenText.slice(0, 200);
-    const googleUrl = `https://translate.googleapis.com/translate_tts?ie=UTF-8&client=tw-ob&tl=en-GB&q=${encodeURIComponent(
-      shortChunk
-    )}`;
-    const fallbackRes = await fetch(googleUrl);
-    if (fallbackRes.ok && fallbackRes.body) {
-      return new Response(fallbackRes.body, {
+    const chunks = splitTextIntoChunks(spokenText, 175);
+    const tl = isMale ? 'en-AU' : 'en-GB';
+    const buffers: ArrayBuffer[] = [];
+
+    for (const chunk of chunks) {
+      const googleUrl = `https://translate.googleapis.com/translate_tts?ie=UTF-8&client=tw-ob&tl=${tl}&q=${encodeURIComponent(
+        chunk
+      )}`;
+      const res = await fetch(googleUrl);
+      if (res.ok) {
+        buffers.push(await res.arrayBuffer());
+      }
+    }
+
+    if (buffers.length > 0) {
+      const totalLen = buffers.reduce((acc, b) => acc + b.byteLength, 0);
+      const merged = new Uint8Array(totalLen);
+      let offset = 0;
+      for (const b of buffers) {
+        merged.set(new Uint8Array(b), offset);
+        offset += b.byteLength;
+      }
+
+      return new Response(merged, {
         status: 200,
         headers: {
           'Content-Type': 'audio/mpeg',
@@ -76,7 +120,7 @@ export async function GET(request: Request) {
       });
     }
   } catch {
-    // Client will gracefully fall back to browser Neural voice
+    // Ignore
   }
 
   return NextResponse.json({ error: 'TTS stream unavailable' }, { status: 503 });
