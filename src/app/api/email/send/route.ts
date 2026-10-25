@@ -15,7 +15,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Missing required email fields (to, subject, html)' }, { status: 400 });
     }
 
-    const fromAddress = from || process.env.GMAIL_FROM || 'gcse mate <noreply@btpsec.com>';
+    const fromAddress = from || process.env.GMAIL_FROM || 'GCSE mate <noreply@btpsec.com>';
 
     // Edge MailChannels HTTP API dispatch
     try {
@@ -24,7 +24,7 @@ export async function POST(request: Request) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           personalizations: [{ to: [{ email: to }] }],
-          from: { email: 'noreply@btpsec.com', name: 'gcse mate Platform' },
+          from: { email: 'noreply@btpsec.com', name: 'GCSE mate Platform' },
           subject,
           content: [{ type: 'text/html', value: html }],
         }),

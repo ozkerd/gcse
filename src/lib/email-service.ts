@@ -62,7 +62,7 @@ export class EmailService {
     const htmlContent = `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 24px; border: 1px solid #e2e8f0; rounded: 16px;">
         <div style="text-align: center; margin-bottom: 24px;">
-          <h1 style="color: #4f46e5; margin: 0;">gcse mate</h1>
+          <h1 style="color: #4f46e5; margin: 0;">GCSE mate</h1>
           <p style="color: #64748b; font-size: 14px; margin-top: 4px;">AI Adaptive GCSE Platform</p>
         </div>
 
@@ -84,7 +84,7 @@ export class EmailService {
         </ul>
 
         <div style="text-align: center; margin-top: 32px; pt-24 border-top: 1px solid #f1f5f9;">
-          <p style="color: #94a3b8; font-size: 12px;">Sent automatically by gcse mate learning system</p>
+          <p style="color: #94a3b8; font-size: 12px;">Sent automatically by GCSE mate learning system</p>
         </div>
       </div>
     `;
@@ -106,7 +106,7 @@ export class EmailService {
     const htmlContent = `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 24px; border: 1px solid #e2e8f0;">
         <h2 style="color: #4f46e5;">Weekly Progress & Analysis Report</h2>
-        <p>Dear Parent, here is ${studentName}'s weekly learning summary on gcse mate:</p>
+        <p>Dear Parent, here is ${studentName}'s weekly learning summary on GCSE mate:</p>
         <ul>
           <li><strong>Questions Solved This Week:</strong> ${questionsAttempted}</li>
           <li><strong>Current Active Streak:</strong> ${streakDays} Days 🔥</li>

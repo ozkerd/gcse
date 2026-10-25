@@ -5,7 +5,7 @@ import { MasteryBadgeModal } from '@/components/MasteryBadgeModal';
 import { AnalyticsTracker } from '@/components/AnalyticsTracker';
 
 export const metadata: Metadata = {
-  title: 'gcse mate - AI Adaptive GCSE Learning Platform',
+  title: 'GCSE mate - AI Adaptive GCSE Learning Platform',
   description: 'Intelligent GCSE Revision, Diagnostic Testing, Target Grade Tracking & Adaptive Question Engine',
 };
 
@@ -25,7 +25,7 @@ export default function RootLayout({
         <MasteryBadgeModal />
         <footer className="border-t border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 py-6 mt-12 transition-colors">
           <div className="max-w-7xl mx-auto px-4 text-center text-xs text-slate-500 dark:text-slate-400">
-            <p>© 2026 <span className="font-semibold text-slate-700 dark:text-slate-300">gcse mate</span> — AI Adaptive Learning Platform</p>
+            <p>© 2026 <span className="font-semibold text-slate-700 dark:text-slate-300">GCSE mate</span> — AI Adaptive Learning Platform</p>
           </div>
         </footer>
       </body>

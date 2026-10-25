@@ -55,8 +55,11 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: 'Missing text parameter' }, { status: 400 });
   }
 
-  // Convert all mathematical and scientific notation into natural UK spoken English
-  const spokenText = formatSpokenMathText(rawText).slice(0, 950);
+  // Convert all mathematical and scientific notation into natural UK spoken English, ensuring SSML safety
+  const spokenText = formatSpokenMathText(rawText)
+    .replace(/&/g, ' and ')
+    .replace(/[<>&]/g, ' ')
+    .slice(0, 950);
 
   const isMale = speaker.includes('dan');
   const pollyVoice: 'Brian' | 'Amy' = isMale ? 'Brian' : 'Amy';

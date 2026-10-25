@@ -171,7 +171,7 @@ export default function StatsPage() {
           </div>
 
           <h1 className="text-2xl font-bold text-center text-slate-900 dark:text-slate-100">
-            gcse mate Platform Analytics
+            GCSE mate Platform Analytics
           </h1>
           <p className="text-sm text-slate-500 dark:text-slate-400 text-center mt-2 mb-6">
             Restricted administrator portal. Enter access password to proceed.
@@ -241,7 +241,7 @@ export default function StatsPage() {
             </span>
           </div>
           <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
-            Real-time unique visitors, hardware breakdown, and User-Agent distribution across gcse mate.
+            Real-time unique visitors, hardware breakdown, and User-Agent distribution across GCSE mate.
           </p>
         </div>
 

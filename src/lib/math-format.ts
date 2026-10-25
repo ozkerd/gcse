@@ -292,7 +292,17 @@ export function formatSpokenMathText(raw: string): string {
   // 9. Subscripts: x_1, y_2, V_{total} -> "x 1", "y 2", "V total"
   s = s
     .replace(/_\{([^{}]+)\}/g, ' $1 ')
-    .replace(/_([a-zA-Z0-9]+)/g, ' $1 ');
+    .replace(/_([a-zA-Z0-9]+)/g, ' $1 ')
+    .replace(/₀/g, ' 0 ')
+    .replace(/₁/g, ' 1 ')
+    .replace(/₂/g, ' 2 ')
+    .replace(/₃/g, ' 3 ')
+    .replace(/₄/g, ' 4 ')
+    .replace(/₅/g, ' 5 ')
+    .replace(/₆/g, ' 6 ')
+    .replace(/₇/g, ' 7 ')
+    .replace(/₈/g, ' 8 ')
+    .replace(/₉/g, ' 9 ');
 
   // 10. Comparisons, inequalities & operators
   s = s
@@ -305,6 +315,7 @@ export function formatSpokenMathText(raw: string): string {
     .replace(/\\times|×|\*/g, ' times ')
     .replace(/\\div|÷/g, ' divided by ')
     .replace(/\\cdot/g, ' times ')
+    .replace(/&/g, ' and ')
     .replace(/</g, ' is less than ')
     .replace(/>/g, ' is greater than ')
     // Slash between numbers or variables (e.g. "150 / 12", "x / 4", "1/2")
@@ -336,12 +347,19 @@ export function formatSpokenMathText(raw: string): string {
     .replace(/\\cup\b|∪/g, ' or ')
     .replace(/\\mid\b/g, ' given ')
     .replace(/\|/g, '. ')
-    .replace(/%/g, ' percent ');
+    .replace(/%/g, ' percent ')
+    .replace(/—/g, ', ')
+    .replace(/–/g, ' to ')
+    .replace(/…/g, '...')
+    .replace(/[“”"]/g, ' ')
+    .replace(/[‘’']/g, "'");
 
-  // 12. Clean up any remaining LaTeX backslashes or braces
+  // 12. Clean up any remaining LaTeX backslashes, XML tags/entities or braces for SSML safety
   s = s
+    .replace(/<[^>]*>/g, ' ')
     .replace(/\\[a-zA-Z]+/g, ' ')
     .replace(/[{}]/g, ' ')
+    .replace(/[<>&]/g, ' and ')
     .replace(/\s+/g, ' ')
     .trim();
 
